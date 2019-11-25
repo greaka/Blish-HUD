@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Blish_HUD.Controls {
-
-    public enum MenuItemType {
+namespace Blish_HUD.Controls
+{
+    public enum MenuItemType
+    {
         Root,
         Item
     }
 
-    public interface IMenuItem {
-
-        event EventHandler<ControlActivatedEventArgs> ItemSelected;
-
+    public interface IMenuItem
+    {
         int MenuItemHeight { get; set; }
 
         bool Selected { get; }
@@ -20,6 +19,8 @@ namespace Blish_HUD.Controls {
 
         bool ShouldShift { get; set; }
 
+        event EventHandler<ControlActivatedEventArgs> ItemSelected;
+
         void Select();
 
         void Select(MenuItem menuItem);
@@ -27,7 +28,5 @@ namespace Blish_HUD.Controls {
         void Select(MenuItem menuItem, List<IMenuItem> itemPath);
 
         void Deselect();
-
     }
-
 }

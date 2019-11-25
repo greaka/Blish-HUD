@@ -1,5 +1,7 @@
-﻿namespace Blish_HUD.Modules {
-    public enum ModuleDependencyCheckResult {
+﻿namespace Blish_HUD.Modules
+{
+    public enum ModuleDependencyCheckResult
+    {
         NotFound,
         Available,
         AvailableNotEnabled,

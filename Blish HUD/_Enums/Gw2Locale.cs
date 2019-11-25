@@ -1,44 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Blish_HUD {
-
+﻿namespace Blish_HUD
+{
     /// <summary>
-    /// Languages supported within Guild Wars 2.
+    ///     Languages supported within Guild Wars 2.
     /// </summary>
-    public enum Gw2Locale {
+    public enum Gw2Locale
+    {
         /// <summary>
-        /// English locale.
+        ///     English locale.
         /// </summary>
         English = 0,
 
         /// <summary>
-        /// Spanish locale.
+        ///     Spanish locale.
         /// </summary>
         Spanish = 1,
 
         /// <summary>
-        /// German locale.
+        ///     German locale.
         /// </summary>
         German = 2,
 
         /// <summary>
-        /// French locale.
+        ///     French locale.
         /// </summary>
         French = 3,
 
         /// <summary>
-        /// Korean locale.
+        ///     Korean locale.
         /// </summary>
         Korean = 4,
 
         /// <summary>
-        /// Chinese locale.
+        ///     Chinese locale.
         /// </summary>
         Chinese = 5
     }
-
 }

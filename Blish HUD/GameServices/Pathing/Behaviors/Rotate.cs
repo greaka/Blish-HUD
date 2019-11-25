@@ -1,45 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using Blish_HUD.Controls;
+﻿using System.Collections.Generic;
 using Blish_HUD.Entities;
 using Microsoft.Xna.Framework;
 
-namespace Blish_HUD.Pathing.Behaviors {
-
+namespace Blish_HUD.Pathing.Behaviors
+{
     [PathingBehavior("rotate")]
-    class Rotate<TPathable, TEntity> : PathingBehavior<TPathable, TEntity>, ILoadableBehavior
+    internal class Rotate<TPathable, TEntity> : PathingBehavior<TPathable, TEntity>, ILoadableBehavior
         where TPathable : ManagedPathable<TEntity>
-        where TEntity : Entity {
-
-        public float RotationX {
-            get => MathHelper.ToDegrees(ManagedPathable.ManagedEntity.RotationX);
-            set => ManagedPathable.ManagedEntity.RotationX = MathHelper.ToRadians(value);
+        where TEntity : Entity
+    {
+        public Rotate(TPathable managedPathable) : base(managedPathable)
+        {
         }
 
-        public float RotationY {
-            get => MathHelper.ToDegrees(ManagedPathable.ManagedEntity.RotationY);
-            set => ManagedPathable.ManagedEntity.RotationY = MathHelper.ToRadians(value);
+        public float RotationX
+        {
+            get => MathHelper.ToDegrees(this.ManagedPathable.ManagedEntity.RotationX);
+            set => this.ManagedPathable.ManagedEntity.RotationX = MathHelper.ToRadians(value);
         }
 
-        public float RotationZ {
-            get => MathHelper.ToDegrees(ManagedPathable.ManagedEntity.RotationZ);
-            set => ManagedPathable.ManagedEntity.RotationZ = MathHelper.ToRadians(value);
+        public float RotationY
+        {
+            get => MathHelper.ToDegrees(this.ManagedPathable.ManagedEntity.RotationY);
+            set => this.ManagedPathable.ManagedEntity.RotationY = MathHelper.ToRadians(value);
         }
 
-        public Rotate(TPathable managedPathable) : base(managedPathable) { }
+        public float RotationZ
+        {
+            get => MathHelper.ToDegrees(this.ManagedPathable.ManagedEntity.RotationZ);
+            set => this.ManagedPathable.ManagedEntity.RotationZ = MathHelper.ToRadians(value);
+        }
 
-        public void LoadWithAttributes(IEnumerable<PathableAttribute> attributes) {
-            float rotateX = 0f;
-            float rotateY = 0f;
-            float rotateZ = 0f;
+        public void LoadWithAttributes(IEnumerable<PathableAttribute> attributes)
+        {
+            var rotateX = 0f;
+            var rotateY = 0f;
+            var rotateZ = 0f;
 
-            foreach (var attr in attributes) {
-                switch (attr.Name.ToLowerInvariant()) {
+            foreach (var attr in attributes)
+            {
+                switch (attr.Name.ToLowerInvariant())
+                {
                     case "rotate-x":
                         InvariantUtil.TryParseFloat(attr.Value, out rotateX);
                         break;
@@ -52,11 +53,9 @@ namespace Blish_HUD.Pathing.Behaviors {
                 }
             }
 
-            ManagedPathable.ManagedEntity.Rotation = new Vector3(MathHelper.ToRadians(rotateX),
-                                                                 MathHelper.ToRadians(rotateY),
-                                                                 MathHelper.ToRadians(rotateZ));
+            this.ManagedPathable.ManagedEntity.Rotation = new Vector3(MathHelper.ToRadians(rotateX),
+                MathHelper.ToRadians(rotateY),
+                MathHelper.ToRadians(rotateZ));
         }
-
     }
-
 }

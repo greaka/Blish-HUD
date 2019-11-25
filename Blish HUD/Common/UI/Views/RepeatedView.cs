@@ -6,30 +6,33 @@ using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 using Microsoft.Xna.Framework;
 
-namespace Blish_HUD.Common.UI.Views {
-    public class RepeatedView<TModel> : View<IPresenter<RepeatedView<TModel>>> {
-
-        private readonly ObservableCollection<IView> _views = new ObservableCollection<IView>();
+namespace Blish_HUD.Common.UI.Views
+{
+    public class RepeatedView<TModel> : View<IPresenter<RepeatedView<TModel>>>
+    {
+        private readonly FlowPanel _categoryFlowPanel = new FlowPanel();
 
         private readonly Dictionary<IView, ViewContainer> _viewContainers = new Dictionary<IView, ViewContainer>();
 
-        private readonly FlowPanel _categoryFlowPanel = new FlowPanel();
+        public RepeatedView()
+        {
+            this.Views.CollectionChanged += ViewsOnCollectionChanged;
+        }
 
-        public ObservableCollection<IView> Views => _views;
+        public ObservableCollection<IView> Views { get; } = new ObservableCollection<IView>();
 
         public int ViewHeight { get; set; } = 325;
 
-        public ControlFlowDirection FlowDirection {
-            get => _categoryFlowPanel.FlowDirection;
-            set => _categoryFlowPanel.FlowDirection = value;
+        public ControlFlowDirection FlowDirection
+        {
+            get => this._categoryFlowPanel.FlowDirection;
+            set => this._categoryFlowPanel.FlowDirection = value;
         }
 
-        public RepeatedView() {
-            _views.CollectionChanged += ViewsOnCollectionChanged;
-        }
-
-        private void ViewsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-            switch (e.Action) {
+        private void ViewsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
                 case NotifyCollectionChangedAction.Add:
                     HandleAddViews(e.NewItems.Cast<IView>());
                     break;
@@ -47,17 +50,19 @@ namespace Blish_HUD.Common.UI.Views {
                     break;
 
                 case NotifyCollectionChangedAction.Reset:
-                    _categoryFlowPanel.ClearChildren();
-                    _viewContainers.Clear();
+                    this._categoryFlowPanel.ClearChildren();
+                    this._viewContainers.Clear();
                     break;
             }
         }
 
-        private void ReflowViews() {
-            int lastBottom = 0;
+        private void ReflowViews()
+        {
+            var lastBottom = 0;
 
-            foreach (var view in _views) {
-                var viewContainter = _viewContainers[view];
+            foreach (var view in this.Views)
+            {
+                var viewContainter = this._viewContainers[view];
 
                 viewContainter.Location = new Point(0, lastBottom);
 
@@ -65,26 +70,32 @@ namespace Blish_HUD.Common.UI.Views {
             }
         }
 
-        private void HandleAddViews(IEnumerable<IView> views) {
-            foreach (var view in views) {
-                var viewContainer = new ViewContainer() {
-                    Size   = new Point(_categoryFlowPanel.Width, this.ViewHeight),
-                    Parent = _categoryFlowPanel
+        private void HandleAddViews(IEnumerable<IView> views)
+        {
+            foreach (var view in views)
+            {
+                var viewContainer = new ViewContainer
+                {
+                    Size = new Point(this._categoryFlowPanel.Width, this.ViewHeight),
+                    Parent = this._categoryFlowPanel
                 };
 
                 viewContainer.Show(view);
 
-                _viewContainers.Add(view, viewContainer);
+                this._viewContainers.Add(view, viewContainer);
             }
 
             ReflowViews();
         }
 
-        private void HandleRemoveViews(IEnumerable<IView> views) {
-            foreach (var view in views) {
-                if (_viewContainers.ContainsKey(view)) {
-                    _viewContainers[view].Dispose();
-                    _viewContainers.Remove(view);
+        private void HandleRemoveViews(IEnumerable<IView> views)
+        {
+            foreach (var view in views)
+            {
+                if (this._viewContainers.ContainsKey(view))
+                {
+                    this._viewContainers[view].Dispose();
+                    this._viewContainers.Remove(view);
                 }
             }
 
@@ -92,10 +103,10 @@ namespace Blish_HUD.Common.UI.Views {
         }
 
         /// <inheritdoc />
-        protected override void Build(Panel buildPanel) {
-            _categoryFlowPanel.Size   = buildPanel.ContentRegion.Size;
-            _categoryFlowPanel.Parent = buildPanel;
+        protected override void Build(Panel buildPanel)
+        {
+            this._categoryFlowPanel.Size = buildPanel.ContentRegion.Size;
+            this._categoryFlowPanel.Parent = buildPanel;
         }
-
     }
 }

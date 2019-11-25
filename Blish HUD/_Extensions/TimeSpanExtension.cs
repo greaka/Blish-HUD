@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace Blish_HUD {
+namespace Blish_HUD
+{
     public static class TimeSpanExtension
     {
         public static TimeSpan Multiply(this TimeSpan timeSpan, int multiplier)
@@ -10,7 +11,7 @@ namespace Blish_HUD {
 
         public static TimeSpan Multiply(this TimeSpan timeSpan, decimal multiplier)
         {
-            return TimeSpan.FromTicks((long)(timeSpan.Ticks * multiplier));
+            return TimeSpan.FromTicks((long) (timeSpan.Ticks * multiplier));
         }
 
         public static TimeSpan Divide(this TimeSpan timeSpan, int dividor)
@@ -20,7 +21,7 @@ namespace Blish_HUD {
 
         public static TimeSpan Divide(this TimeSpan timeSpan, decimal dividor)
         {
-            return TimeSpan.FromTicks((long)(timeSpan.Ticks / dividor));
+            return TimeSpan.FromTicks((long) (timeSpan.Ticks / dividor));
         }
     }
 }

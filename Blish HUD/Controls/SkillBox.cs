@@ -6,28 +6,31 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.TextureAtlases;
 
-namespace Blish_HUD.Controls {
-
-    public enum SkillBoxDirection {
+namespace Blish_HUD.Controls
+{
+    public enum SkillBoxDirection
+    {
         Up,
         Right,
         Down,
         Left
     }
 
-    public enum SkillBoxSize {
+    public enum SkillBoxSize
+    {
         /// <summary>
-        /// The size of F1-F5 Abilities / Mount
+        ///     The size of F1-F5 Abilities / Mount
         /// </summary>
         Small,
+
         /// <summary>
-        /// The size of standard 1-0 abilities
+        ///     The size of standard 1-0 abilities
         /// </summary>
         Normal
     }
 
-    public class SkillBox:Control {
-
+    public class SkillBox : Control
+    {
         private const int BOX_DIMENSIONSATSCALE_NORMAL = 60;
         private const int ARROW_DIMENSIONATSCALE_NORMAL = 14;
 
@@ -36,64 +39,118 @@ namespace Blish_HUD.Controls {
 
         protected static TextureAtlas skillBoxAtlas;
 
-        private bool _dropped = false;
-        public bool Dropped { get { return _dropped; } set { if (_dropped != value) { _dropped = value; Invalidate(); } } }
+        private SkillBoxSize _boxScale = SkillBoxSize.Normal;
+
+        private SkillBoxDirection _Direction = SkillBoxDirection.Up;
+
+        private bool _dropped;
+
+        private bool _hasDropdown;
+
+        private AsyncTexture2D _icon;
+        private EaseAnimation animFlipIcon;
+
+        private readonly EaseAnimation animPulseLoad;
+
+        public List<SkillBox> Items = new List<SkillBox>();
+
+        public SkillBox()
+        {
+            LoadStaticResources();
+
+            this.ZIndex = Screen.MENUUI_BASEINDEX;
+
+            this.animPulseLoad = Animation.Tween(1, 7, 600, AnimationService.EasingMethod.Linear);
+
+            Invalidate();
+        }
+
+        public bool Dropped
+        {
+            get => this._dropped;
+            set
+            {
+                if (this._dropped != value)
+                {
+                    this._dropped = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        public AsyncTexture2D Icon
+        {
+            get => this._icon;
+            set
+            {
+                if (this._icon != value)
+                {
+                    this._icon = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        public bool HasDropdown
+        {
+            get => this._hasDropdown;
+            set
+            {
+                this._hasDropdown = value;
+                Invalidate();
+            }
+        }
+
+        public SkillBoxDirection Direction
+        {
+            get => this._Direction;
+            set
+            {
+                this._Direction = value;
+                Invalidate();
+            }
+        }
+
+        public SkillBoxSize BoxScale
+        {
+            get => this._boxScale;
+            set
+            {
+                this._boxScale = value;
+                Invalidate();
+            }
+        }
 
 
-        private static void LoadStaticResources() {
+        private static void LoadStaticResources()
+        {
             //if (skillBoxAtlas == null) {
             //    skillBoxAtlas = GameServices.GetService<ContentService>().GetTextureAtlas2(@"atlas\skillbox");
             //}
         }
 
-        private AsyncTexture2D _icon;
-        public AsyncTexture2D Icon { get { return _icon; } set { if (_icon != value) { _icon = value; Invalidate(); } } }
+        public void FlipIcon(Texture2D newIcon)
+        {
+            if ((this.animFlipIcon != null) || this.animPulseLoad.Active) return;
 
-        private bool _hasDropdown = false;
-        public bool HasDropdown { get { return _hasDropdown; } set { _hasDropdown = value; Invalidate(); } }
+            var stageOneComplete = false;
 
-        private SkillBoxDirection _Direction = SkillBoxDirection.Up;
-        public SkillBoxDirection Direction {
-            get {
-                return _Direction;
-            }
-            set {
-                _Direction = value;
-                Invalidate();
-            }
-        }
+            this.animFlipIcon = GameService.Animation.Tween(0,
+                this.BoxScale == SkillBoxSize.Normal ? BOX_DIMENSIONSATSCALE_NORMAL : BOX_DIMENSIONSATSCALE_SMALL, 150,
+                AnimationService.EasingMethod.Linear);
 
-        private SkillBoxSize _boxScale = SkillBoxSize.Normal;
-        public SkillBoxSize BoxScale {
-            get {
-                return _boxScale;
-            }
-            set {
-                _boxScale = value;
-                Invalidate();
-            }
-        }
-
-        public List<SkillBox> Items = new List<SkillBox>();
-
-        private EaseAnimation animPulseLoad;
-        private EaseAnimation animFlipIcon;
-
-        public void FlipIcon(Texture2D newIcon) {
-            if (animFlipIcon != null || animPulseLoad.Active) return;
-
-            bool stageOneComplete = false;
-
-            animFlipIcon = GameService.Animation.Tween(0, this.BoxScale == SkillBoxSize.Normal ? BOX_DIMENSIONSATSCALE_NORMAL : BOX_DIMENSIONSATSCALE_SMALL, 150, AnimationService.EasingMethod.Linear);
-
-            animFlipIcon.AnimationCompleted += delegate {
-                if (!stageOneComplete) {
+            this.animFlipIcon.AnimationCompleted += delegate
+            {
+                if (!stageOneComplete)
+                {
                     stageOneComplete = true;
                     this.Icon = newIcon;
-                    animFlipIcon.Reverse();
-                } else {
-                    GameService.Animation.RemoveAnim(animFlipIcon);
-                    animFlipIcon = null;
+                    this.animFlipIcon.Reverse();
+                }
+                else
+                {
+                    GameService.Animation.RemoveAnim(this.animFlipIcon);
+                    this.animFlipIcon = null;
                     this.BackgroundColor = Color.Black;
                     Invalidate();
                 }
@@ -101,41 +158,35 @@ namespace Blish_HUD.Controls {
 
             this.BackgroundColor = Color.Black;
 
-            animFlipIcon.Start();
+            this.animFlipIcon.Start();
         }
 
-        public void SetLoading() {
-            if (animFlipIcon != null || animPulseLoad.Active) return;
+        public void SetLoading()
+        {
+            if ((this.animFlipIcon != null) || this.animPulseLoad.Active) return;
 
             this.BackgroundColor = Color.White;
-            animPulseLoad.Start(true);
+            this.animPulseLoad.Start(true);
         }
 
-        public void StopLoading() {
-            if (!animPulseLoad.Active) return;
+        public void StopLoading()
+        {
+            if (!this.animPulseLoad.Active) return;
 
-            animPulseLoad.Stop();
+            this.animPulseLoad.Stop();
             this.BackgroundColor = Color.Transparent;
             Invalidate();
         }
 
-        public SkillBox() : base() {
-            LoadStaticResources();
-
-            this.ZIndex = Screen.MENUUI_BASEINDEX;
-
-            animPulseLoad = Animation.Tween(1, 7, 600, AnimationService.EasingMethod.Linear);
-
-            Invalidate();
-        }
-
-        protected override void OnClick(MouseEventArgs e) {
+        protected override void OnClick(MouseEventArgs e)
+        {
             base.OnClick(e);
 
             this.Dropped = !this.Dropped;
         }
 
-        protected override CaptureType CapturesInput() {
+        protected override CaptureType CapturesInput()
+        {
             return CaptureType.Mouse;
         }
 
@@ -177,51 +228,74 @@ namespace Blish_HUD.Controls {
         }
         */
 
-        public override void DoUpdate(GameTime gameTime) {
+        public override void DoUpdate(GameTime gameTime)
+        {
             base.DoUpdate(gameTime);
 
-            if (animPulseLoad.Active || animFlipIcon != null)
+            if (this.animPulseLoad.Active || (this.animFlipIcon != null))
                 Invalidate();
         }
-        
-        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-            int VertOffset = 0;
-            int HorzOffset = 0;
 
-            if (this.HasDropdown) {
-                if (this.Direction == SkillBoxDirection.Up) {
-                    VertOffset = this.BoxScale == SkillBoxSize.Normal ? ARROW_DIMENSIONATSCALE_NORMAL : ARROW_DIMENSIONATSCALE_SMALL;
-                } else if (this.Direction == SkillBoxDirection.Left) {
-                    HorzOffset = this.BoxScale == SkillBoxSize.Normal ? ARROW_DIMENSIONATSCALE_NORMAL : ARROW_DIMENSIONATSCALE_SMALL;
+        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds)
+        {
+            var VertOffset = 0;
+            var HorzOffset = 0;
+
+            if (this.HasDropdown)
+            {
+                if (this.Direction == SkillBoxDirection.Up)
+                {
+                    VertOffset = this.BoxScale == SkillBoxSize.Normal
+                        ? ARROW_DIMENSIONATSCALE_NORMAL
+                        : ARROW_DIMENSIONATSCALE_SMALL;
+                }
+                else if (this.Direction == SkillBoxDirection.Left)
+                {
+                    HorzOffset = this.BoxScale == SkillBoxSize.Normal
+                        ? ARROW_DIMENSIONATSCALE_NORMAL
+                        : ARROW_DIMENSIONATSCALE_SMALL;
                 }
             }
-            
-            var primaryTileBounds = new Rectangle(HorzOffset, VertOffset, BOX_DIMENSIONSATSCALE_NORMAL, BOX_DIMENSIONSATSCALE_NORMAL).OffsetBy(bounds.Location);
-            
-            if (!animPulseLoad.Active)
-                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-blank"), primaryTileBounds.OffsetBy(bounds.Location), Color.White);
+
+            var primaryTileBounds =
+                new Rectangle(HorzOffset, VertOffset, BOX_DIMENSIONSATSCALE_NORMAL, BOX_DIMENSIONSATSCALE_NORMAL)
+                    .OffsetBy(bounds.Location);
+
+            if (!this.animPulseLoad.Active)
+                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-blank"),
+                    primaryTileBounds.OffsetBy(bounds.Location), Color.White);
 
             if (this.Icon != null)
-                if (animFlipIcon == null)
-                    spriteBatch.Draw(this.Icon, primaryTileBounds.OffsetBy(bounds.Location), new Rectangle(16, 16, 96, 96), Color.White);
+                if (this.animFlipIcon == null)
+                    spriteBatch.Draw(this.Icon, primaryTileBounds.OffsetBy(bounds.Location),
+                        new Rectangle(16, 16, 96, 96), Color.White);
                 else
-                    spriteBatch.Draw(this.Icon, primaryTileBounds.Add(0, animFlipIcon.CurrentValueInt / 2, 0, Math.Max(-animFlipIcon.CurrentValueInt, -primaryTileBounds.Height + 1)).OffsetBy(bounds.Location), new Rectangle(16, 16, 96, 96), Color.White);
+                    spriteBatch.Draw(this.Icon,
+                        primaryTileBounds
+                            .Add(0, this.animFlipIcon.CurrentValueInt / 2, 0,
+                                Math.Max(-this.animFlipIcon.CurrentValueInt, -primaryTileBounds.Height + 1))
+                            .OffsetBy(bounds.Location), new Rectangle(16, 16, 96, 96), Color.White);
             else
-                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-blank"), primaryTileBounds.OffsetBy(bounds.Location), Color.White);
+                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-blank"),
+                    primaryTileBounds.OffsetBy(bounds.Location), Color.White);
 
-            if (animPulseLoad.Active)
-                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion($"skillbox/sb-anim1-f{animPulseLoad.CurrentValueInt}"), primaryTileBounds.OffsetBy(bounds.Location), Color.White);
+            if (this.animPulseLoad.Active)
+                spriteBatch.Draw(
+                    Resources.Control.TextureAtlasControl.GetRegion(
+                        $"skillbox/sb-anim1-f{this.animPulseLoad.CurrentValueInt}"),
+                    primaryTileBounds.OffsetBy(bounds.Location), Color.White);
 
-            spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-outline"), primaryTileBounds.OffsetBy(bounds.Location), Color.White);
+            spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-outline"),
+                primaryTileBounds.OffsetBy(bounds.Location), Color.White);
 
-            if (this.MouseOver) {
-                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-hover"), primaryTileBounds.OffsetBy(bounds.Location), Color.White);
+            if (this.MouseOver)
+            {
+                spriteBatch.Draw(Resources.Control.TextureAtlasControl.GetRegion("skillbox/sb-hover"),
+                    primaryTileBounds.OffsetBy(bounds.Location), Color.White);
             }
 
             //if (this.Dropped && Items.Count == 0)
             //    spriteBatch.Draw(controlAtlas.GetRegion("skillbox/sb-close"), primaryTileBounds, Color.White * (this.MouseOver ? 0.8f : 1f));
         }
-
-
     }
 }

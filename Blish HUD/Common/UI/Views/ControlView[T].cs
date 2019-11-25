@@ -4,10 +4,25 @@ using Blish_HUD.Common.UI.Presenters;
 using Blish_HUD.Controls;
 using Blish_HUD.Graphics.UI;
 
-namespace Blish_HUD.Common.UI.Views {
-
+namespace Blish_HUD.Common.UI.Views
+{
     public class ControlView<TControl> : IControlView<TControl>, IView<IControlPresenter>
-        where TControl : Control {
+        where TControl : Control
+    {
+        private IControlPresenter _presenter;
+
+        public ControlView(TControl control)
+        {
+            this.Control = control;
+        }
+
+        public ControlView(TControl control, IControlPresenter presenter) : this(control)
+        {
+            this.Presenter = presenter;
+        }
+
+        /// <inheritdoc />
+        public TControl Control { get; }
 
         /// <inheritdoc />
         public event EventHandler<EventArgs> Loaded;
@@ -18,64 +33,57 @@ namespace Blish_HUD.Common.UI.Views {
         /// <inheritdoc />
         public event EventHandler<EventArgs> Unloaded;
 
-        private readonly TControl _control;
+        /// <inheritdoc cref="IView{TPresenter}.Presenter" />
+        public IControlPresenter Presenter
+        {
+            get => this._presenter;
+            set
+            {
+                if (this._presenter == value) return;
 
-        private IControlPresenter _presenter;
+                this._presenter?.DoUnload();
 
-        /// <inheritdoc />
-        public TControl Control => _control;
+                this._presenter = value;
 
-        /// <inheritdoc cref="IView{TPresenter}.Presenter"/>
-        public IControlPresenter Presenter {
-            get => _presenter;
-            set {
-                if (_presenter == value) return;
-
-                _presenter?.DoUnload();
-
-                _presenter = value;
-
-                _ = DoLoad(new Progress<string>((report) => { /* NOOP */ }));
+                _ = DoLoad(new Progress<string>(report =>
+                {
+                    /* NOOP */
+                }));
             }
         }
 
-        public ControlView(TControl control) {
-            _control = control;
-        }
-
-        public ControlView(TControl control, IControlPresenter presenter) : this(control) {
-            this.Presenter = presenter;
-        }
-
         /// <inheritdoc />
-        public async Task<bool> DoLoad(IProgress<string> progress) {
-            bool loadResult = await _presenter.DoLoad(progress);
+        public async Task<bool> DoLoad(IProgress<string> progress)
+        {
+            var loadResult = await this._presenter.DoLoad(progress);
 
-            if (loadResult) {
-                this.Loaded?.Invoke(this, EventArgs.Empty);
+            if (loadResult)
+            {
+                Loaded?.Invoke(this, EventArgs.Empty);
 
-                this.Built?.Invoke(this, EventArgs.Empty);
+                Built?.Invoke(this, EventArgs.Empty);
 
-                _presenter.DoUpdateView();
+                this._presenter.DoUpdateView();
             }
 
             return loadResult;
         }
 
         /// <inheritdoc />
-        public void DoBuild(Panel buildPanel) {
-            _control.Parent = buildPanel;
+        public void DoBuild(Panel buildPanel)
+        {
+            this.Control.Parent = buildPanel;
         }
 
         /// <inheritdoc />
-        public void DoUnload() {
-            _control.Dispose();
+        public void DoUnload()
+        {
+            this.Control.Dispose();
         }
 
-        public static implicit operator TControl(ControlView<TControl> controlView) {
-            return controlView._control;
+        public static implicit operator TControl(ControlView<TControl> controlView)
+        {
+            return controlView.Control;
         }
-
     }
-
 }

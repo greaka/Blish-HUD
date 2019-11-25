@@ -1,91 +1,103 @@
 ﻿using System;
 using System.Linq;
+using Blish_HUD.Controls.Resources;
 using Blish_HUD.Input;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Blish_HUD.Controls {
-
+namespace Blish_HUD.Controls
+{
     // TODO: Checkbox needs to shrink on mousedown (animation)
-    public class Checkbox : LabelBase, ICheckable {
-
+    public class Checkbox : LabelBase, ICheckable
+    {
         private const int CHECKBOX_SIZE = 32;
 
-        public event EventHandler<CheckChangedEvent> CheckedChanged;
+        private bool _checked;
 
-        protected virtual void OnCheckedChanged(CheckChangedEvent e) {
-            this.CheckedChanged?.Invoke(this, e);
+        public Checkbox()
+        {
+            this._size = new Point(64, CHECKBOX_SIZE / 2);
+
+            this._autoSizeWidth = true;
+            this._textColor = Color.White;
+            this._verticalAlignment = VerticalAlignment.Middle;
         }
 
         /// <summary>
-        /// The text this <see cref="Checkbox"/> should show.
+        ///     The text this <see cref="Checkbox" /> should show.
         /// </summary>
-        public string Text {
-            get => _text;
-            set => SetProperty(ref _text, value, true);
+        public string Text
+        {
+            get => this._text;
+            set => SetProperty(ref this._text, value, true);
         }
 
-        private bool _checked = false;
-        public bool Checked {
-            get => _checked;
-            set {
-                if (SetProperty(ref _checked, value)) {
-                    OnCheckedChanged(new CheckChangedEvent(_checked));
+        public event EventHandler<CheckChangedEvent> CheckedChanged;
+
+        public bool Checked
+        {
+            get => this._checked;
+            set
+            {
+                if (SetProperty(ref this._checked, value))
+                {
+                    OnCheckedChanged(new CheckChangedEvent(this._checked));
                 }
             }
         }
 
-        public Checkbox() : base() {
-            _size = new Point(64, CHECKBOX_SIZE / 2);
-
-            _autoSizeWidth     = true;
-            _textColor         = Color.White;
-            _verticalAlignment = VerticalAlignment.Middle;
+        protected virtual void OnCheckedChanged(CheckChangedEvent e)
+        {
+            CheckedChanged?.Invoke(this, e);
         }
 
-        public override void RecalculateLayout() {
+        public override void RecalculateLayout()
+        {
             base.RecalculateLayout();
 
-            _size = new Point(CHECKBOX_SIZE / 3 * 2 + LabelRegion.X, _size.Y);
+            this._size = new Point(CHECKBOX_SIZE / 3 * 2 + this.LabelRegion.X, this._size.Y);
         }
 
-        protected override void OnLeftMouseButtonPressed(MouseEventArgs e) {
+        protected override void OnLeftMouseButtonPressed(MouseEventArgs e)
+        {
             if (this.Enabled)
                 this.Checked = !this.Checked;
 
             base.OnLeftMouseButtonPressed(e);
         }
 
-        protected override void OnLeftMouseButtonReleased(MouseEventArgs e) {
+        protected override void OnLeftMouseButtonReleased(MouseEventArgs e)
+        {
             if (this.Enabled)
                 Content.PlaySoundEffectByName(@"audio\button-click");
 
             base.OnLeftMouseButtonReleased(e);
         }
 
-        protected override CaptureType CapturesInput() {
+        protected override CaptureType CapturesInput()
+        {
             return CaptureType.Mouse;
         }
 
-        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-            string state = "-unchecked";
+        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds)
+        {
+            var state = "-unchecked";
             state = this.Checked ? "-checked" : state;
 
-            string extension = "";
+            var extension = "";
             extension = this.MouseOver ? "-active" : extension;
             extension = !this.Enabled ? "-disabled" : extension;
 
-            var sprite = Resources.Checkable.TextureRegionsCheckbox.First(cb => cb.Name == $"checkbox/cb{state}{extension}");
+            var sprite = Checkable.TextureRegionsCheckbox.First(cb => cb.Name == $"checkbox/cb{state}{extension}");
 
             spriteBatch.DrawOnCtrl(this,
-                                   sprite,
-                                   new Rectangle(-9,
-                                                 this.Height / 2 - CHECKBOX_SIZE / 2,
-                                                 CHECKBOX_SIZE,
-                                                 CHECKBOX_SIZE));
+                sprite,
+                new Rectangle(-9,
+                    this.Height / 2 - CHECKBOX_SIZE / 2,
+                    CHECKBOX_SIZE,
+                    CHECKBOX_SIZE));
 
-            DrawText(spriteBatch, new Rectangle(CHECKBOX_SIZE / 3 * 2, 0, LabelRegion.X, LabelRegion.Y));
+            DrawText(spriteBatch, new Rectangle(CHECKBOX_SIZE / 3 * 2, 0, this.LabelRegion.X, this.LabelRegion.Y));
         }
-
     }
 }

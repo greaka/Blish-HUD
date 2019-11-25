@@ -2,18 +2,21 @@
 using Newtonsoft.Json;
 using Version = SemVer.Version;
 
-namespace Blish_HUD.Content.Serialization {
-    public class SemVerConverter : JsonConverter<SemVer.Version> {
-
+namespace Blish_HUD.Content.Serialization
+{
+    public class SemVerConverter : JsonConverter<Version>
+    {
         /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, Version value, JsonSerializer serializer) {
+        public override void WriteJson(JsonWriter writer, Version value, JsonSerializer serializer)
+        {
             writer.WriteValue(value.ToString());
         }
 
         /// <inheritdoc />
-        public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer) {
-             return new SemVer.Version((string)reader.Value, true);
+        public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue,
+            bool hasExistingValue, JsonSerializer serializer)
+        {
+            return new Version((string) reader.Value, true);
         }
-
     }
 }

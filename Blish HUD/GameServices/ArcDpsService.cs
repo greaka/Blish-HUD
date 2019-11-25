@@ -47,33 +47,33 @@ namespace Blish_HUD
             {
                 lock (WatchLock)
                 {
-                    return _hudIsActive;
+                    return this._hudIsActive;
                 }
             }
             private set
             {
                 lock (WatchLock)
                 {
-                    _stopwatch.Restart();
-                    _hudIsActive = value;
+                    this._stopwatch.Restart();
+                    this._hudIsActive = value;
                 }
             }
         }
 
         public void SubscribeToCombatEventId(Action<object, RawCombatEventArgs> func, params uint[] skillIds)
         {
-            if (!_subscribed)
+            if (!this._subscribed)
             {
                 RawCombatEvent += DispatchSkillSubscriptions;
-                _subscribed = true;
+                this._subscribed = true;
             }
 
             foreach (var skillId in skillIds)
             {
-                if (!_subscriptions.ContainsKey(skillId))
-                    _subscriptions.TryAdd(skillId, new ConcurrentBag<Action<object, RawCombatEventArgs>>());
+                if (!this._subscriptions.ContainsKey(skillId))
+                    this._subscriptions.TryAdd(skillId, new ConcurrentBag<Action<object, RawCombatEventArgs>>());
 
-                _subscriptions[skillId].Add(func);
+                this._subscriptions[skillId].Add(func);
             }
         }
 
@@ -82,10 +82,10 @@ namespace Blish_HUD
             if (eventHandler.CombatEvent.Ev == null)
                 return;
             var skillId = eventHandler.CombatEvent.Ev.SkillId;
-            if (!_subscriptions.ContainsKey(skillId))
+            if (!this._subscriptions.ContainsKey(skillId))
                 return;
 
-            foreach (var action in _subscriptions[skillId]) action(sender, eventHandler);
+            foreach (var action in this._subscriptions[skillId]) action(sender, eventHandler);
         }
 
         /// <remarks>
@@ -103,10 +103,10 @@ namespace Blish_HUD
 
         protected override void Initialize()
         {
-            Common = new CommonFields();
-            _stopwatch = new Stopwatch();
-            _server = new SocketListener(10, 200_000);
-            _server.ReceivedMessage += MessageHandler;
+            this.Common = new CommonFields();
+            this._stopwatch = new Stopwatch();
+            this._server = new SocketListener(10, 200_000);
+            this._server.ReceivedMessage += MessageHandler;
 #if DEBUG
             RawCombatEvent += (a, b) => { Interlocked.Increment(ref Counter); };
 #endif
@@ -114,15 +114,15 @@ namespace Blish_HUD
 
         protected override void Load()
         {
-            _server.Start(new IPEndPoint(IPAddress.Loopback, 8214));
-            _stopwatch.Start();
+            this._server.Start(new IPEndPoint(IPAddress.Loopback, 8214));
+            this._stopwatch.Start();
         }
 
         protected override void Unload()
         {
-            _stopwatch.Stop();
-            _server.Stop();
-            RenderPresent = false;
+            this._stopwatch.Stop();
+            this._server.Stop();
+            this.RenderPresent = false;
         }
 
         protected override void Update(GameTime gameTime)
@@ -130,10 +130,10 @@ namespace Blish_HUD
             TimeSpan elapsed;
             lock (WatchLock)
             {
-                elapsed = _stopwatch.Elapsed;
+                elapsed = this._stopwatch.Elapsed;
             }
 
-            RenderPresent = elapsed < _leeway;
+            this.RenderPresent = elapsed < this._leeway;
         }
 
         private void MessageHandler(MessageData data)
@@ -141,7 +141,7 @@ namespace Blish_HUD
             switch (data.Message[0])
             {
                 case (byte) MessageType.ImGui:
-                    HudIsActive = data.Message[1] != 0;
+                    this.HudIsActive = data.Message[1] != 0;
                     break;
                 case (byte) MessageType.CombatArea:
                     ProcessCombat(data.Message, RawCombatEventArgs.CombatEventType.Area);

@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Blish_HUD {
-
+﻿namespace Blish_HUD
+{
     /// <summary>
-    /// The races within Guild Wars 2.
+    ///     The races within Guild Wars 2.
     /// </summary>
     /// <remarks>Matches https://github.com/Ruhrpottpatriot/GW2.NET/blob/master/src/GW2NET.Core/Common/Race.cs</remarks>
-    public enum Gw2Race {
+    public enum Gw2Race
+    {
         /// <summary>Indicates an unknown race.</summary>
         Unknown = 0,
 
@@ -29,5 +24,4 @@ namespace Blish_HUD {
         /// <summary>The 'Sylvari' race.</summary>
         Sylvari = 1 << 4
     }
-
 }

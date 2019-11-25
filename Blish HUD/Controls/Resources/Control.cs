@@ -1,13 +1,14 @@
 ﻿using MonoGame.Extended.TextureAtlases;
 
-namespace Blish_HUD.Controls.Resources {
-    public static class Control {
-
+namespace Blish_HUD.Controls.Resources
+{
+    public static class Control
+    {
         public static readonly TextureAtlas TextureAtlasControl;
 
-        static Control() {
+        static Control()
+        {
             TextureAtlasControl = GameService.Content.GetTextureAtlas(@"atlas\ui");
         }
-
     }
 }

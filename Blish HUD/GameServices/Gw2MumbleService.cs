@@ -2,107 +2,131 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using Microsoft.Xna.Framework;
 using GW2NET.MumbleLink;
+using Microsoft.Xna.Framework;
 
-namespace Blish_HUD {
-
-    public class Gw2MumbleService : GameService {
-
+namespace Blish_HUD
+{
+    public class Gw2MumbleService : GameService
+    {
         private static readonly Logger Logger = Logger.GetLogger<Gw2MumbleService>();
 
-        public event EventHandler<EventArgs> BuildIdChanged;
+        private int _buildId = -1;
 
-        private void OnBuildIdChanged(EventArgs e) {
-            BuildIdChanged?.Invoke(this, e);
-        }
+        public int _delayedTicks;
 
-        public bool Available => gw2Link != null && this.MumbleBacking != null;
+        private readonly Queue<int> _uiTickRates = new Queue<int>();
 
-        private Avatar _mumbleBacking;
-        public Avatar MumbleBacking => _mumbleBacking;
+        private MumbleLinkFile gw2Link;
+
+        private double lastMumbleCheck;
+
+        public bool Available => (this.gw2Link != null) && (this.MumbleBacking != null);
+        public Avatar MumbleBacking { get; private set; }
 
         public TimeSpan TimeSinceTick { get; private set; }
 
         public long UiTick { get; private set; } = -1;
 
-        private int _buildId = -1;
-        public int BuildId {
-            get => _buildId;
-            private set {
-                if (_buildId == value) return;
+        public int BuildId
+        {
+            get => this._buildId;
+            private set
+            {
+                if (this._buildId == value) return;
 
-                _buildId = value;
+                this._buildId = value;
 
                 OnBuildIdChanged(EventArgs.Empty);
             }
         }
 
-        private MumbleLinkFile gw2Link;
+        public float AverageFramesPerUITick => (float) this._uiTickRates.Sum(t => t) / this._uiTickRates.Count;
 
-        protected override void Initialize() { /* NOOP */ }
+        public event EventHandler<EventArgs> BuildIdChanged;
 
-        protected override void Load() {
+        private void OnBuildIdChanged(EventArgs e)
+        {
+            BuildIdChanged?.Invoke(this, e);
+        }
+
+        protected override void Initialize()
+        {
+            /* NOOP */
+        }
+
+        protected override void Load()
+        {
             TryAttachToMumble();
         }
 
-        private void TryAttachToMumble() {
-            try {
-                gw2Link = MumbleLinkFile.CreateOrOpen();
-            } catch (Exception ex) {
+        private void TryAttachToMumble()
+        {
+            try
+            {
+                this.gw2Link = MumbleLinkFile.CreateOrOpen();
+            }
+            catch (Exception ex)
+            {
                 Logger.Warn(ex, "Failed to attach to MumbleLink API.");
                 this.gw2Link = null;
             }
         }
 
-        private double lastMumbleCheck = 0;
-        
-        public int _delayedTicks = 0;
-
-        private Queue<int> _uiTickRates = new Queue<int>();
-        public float AverageFramesPerUITick => (float)_uiTickRates.Sum(t => t) / _uiTickRates.Count;
-
-        protected override void Update(GameTime gameTime) {
+        protected override void Update(GameTime gameTime)
+        {
             this.TimeSinceTick += gameTime.ElapsedGameTime;
 
-            if (gw2Link != null) {
-                try {
-                    _mumbleBacking = gw2Link.Read();
+            if (this.gw2Link != null)
+            {
+                try
+                {
+                    this.MumbleBacking = this.gw2Link.Read();
 
-                    if (_mumbleBacking.UiTick > this.UiTick) {
+                    if (this.MumbleBacking.UiTick > this.UiTick)
+                    {
                         this.TimeSinceTick = TimeSpan.Zero;
-                        this.UiTick        = _mumbleBacking.UiTick;
-                        this.BuildId       = _mumbleBacking.Context.BuildId;
+                        this.UiTick = this.MumbleBacking.UiTick;
+                        this.BuildId = this.MumbleBacking.Context.BuildId;
 
-                        GameService.Graphics.UIScale = (GraphicsService.UiScale) _mumbleBacking.Identity.UiScale;
+                        Graphics.UIScale = (GraphicsService.UiScale) this.MumbleBacking.Identity.UiScale;
 
-                        if (_uiTickRates.Count > 10) _uiTickRates.Dequeue();
-                        _uiTickRates.Enqueue(_delayedTicks);
-                        _delayedTicks = 0;
-                    } else {
-                        _delayedTicks += 1;
+                        if (this._uiTickRates.Count > 10) this._uiTickRates.Dequeue();
+                        this._uiTickRates.Enqueue(this._delayedTicks);
+                        this._delayedTicks = 0;
                     }
-                } catch (NullReferenceException ex) /* [BLISHHUD-X] */ {
-                    Console.WriteLine("Mumble connection failed.");
-                    _mumbleBacking = null;
-                } catch (SerializationException ex) /* [BLISHHUD-10] */ {
-                    Console.WriteLine("Failed to deserialize Mumble API structure.");
-                    _mumbleBacking = null;
+                    else
+                    {
+                        this._delayedTicks += 1;
+                    }
                 }
-            } else {
-                lastMumbleCheck += gameTime.ElapsedGameTime.TotalSeconds;
+                catch (NullReferenceException ex) /* [BLISHHUD-X] */
+                {
+                    Console.WriteLine("Mumble connection failed.");
+                    this.MumbleBacking = null;
+                }
+                catch (SerializationException ex) /* [BLISHHUD-10] */
+                {
+                    Console.WriteLine("Failed to deserialize Mumble API structure.");
+                    this.MumbleBacking = null;
+                }
+            }
+            else
+            {
+                this.lastMumbleCheck += gameTime.ElapsedGameTime.TotalSeconds;
 
-                if (lastMumbleCheck > 10) {
+                if (this.lastMumbleCheck > 10)
+                {
                     TryAttachToMumble();
 
-                    lastMumbleCheck = 0;
+                    this.lastMumbleCheck = 0;
                 }
             }
         }
 
-        protected override void Unload() {
-            gw2Link?.Dispose();
+        protected override void Unload()
+        {
+            this.gw2Link?.Dispose();
         }
     }
-
 }

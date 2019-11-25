@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Xna.Framework.Input;
-
-namespace Blish_HUD.Controls {
-    public class Screen:Container {
-
+﻿namespace Blish_HUD.Controls
+{
+    public class Screen : Container
+    {
         public const int MENUUI_BASEINDEX = 30; // Skillbox
         public const int TOOLTIP3D_BASEINDEX = 40;
         public const int WINDOW_BASEZINDEX = 41;
@@ -13,7 +10,8 @@ namespace Blish_HUD.Controls {
         public const int CONTEXTMENU_BASEINDEX = 50;
 
         /// <inheritdoc />
-        protected override CaptureType CapturesInput() {
+        protected override CaptureType CapturesInput()
+        {
             return CaptureType.None;
         }
 
@@ -27,6 +25,5 @@ namespace Blish_HUD.Controls {
 
         //    return null;
         //}
-
     }
 }

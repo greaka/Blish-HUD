@@ -1,54 +1,56 @@
 ﻿using Blish_HUD.Modules.Managers;
 using Gw2Sharp.WebApi.V2.Models;
 
-namespace Blish_HUD.Modules {
-
-    public class ModuleParameters {
-
+namespace Blish_HUD.Modules
+{
+    public class ModuleParameters
+    {
         private static readonly Logger Logger = Logger.GetLogger<ModuleParameters>();
 
-        private Manifest           _manifest;
-        private SettingsManager    _settingsManager;
-        private ContentsManager    _contentsManager;
-        private DirectoriesManager _directoriesManager;
-        private Gw2ApiManager      _gw2ApiManager;
+        public Manifest Manifest { get; private set; }
 
-        public Manifest Manifest => _manifest;
+        public SettingsManager SettingsManager { get; private set; }
 
-        public SettingsManager SettingsManager => _settingsManager;
+        public ContentsManager ContentsManager { get; private set; }
 
-        public ContentsManager ContentsManager => _contentsManager;
+        public DirectoriesManager DirectoriesManager { get; private set; }
 
-        public DirectoriesManager DirectoriesManager => _directoriesManager;
+        public Gw2ApiManager Gw2ApiManager { get; private set; }
 
-        public Gw2ApiManager Gw2ApiManager => _gw2ApiManager;
-
-        internal static ModuleParameters BuildFromManifest(Manifest manifest, ModuleManager module) {
-            switch (manifest.ManifestVersion) {
+        internal static ModuleParameters BuildFromManifest(Manifest manifest, ModuleManager module)
+        {
+            switch (manifest.ManifestVersion)
+            {
                 case SupportedModuleManifestVersion.V1:
                     return BuildFromManifest(manifest as ManifestV1, module);
                     break;
 
                 default:
-                    Logger.Warn("Module {module} is using an unsupported manifest version {manifestVersion}. The module manifest will not be loaded.", module, manifest.ManifestVersion);
+                    Logger.Warn(
+                        "Module {module} is using an unsupported manifest version {manifestVersion}. The module manifest will not be loaded.",
+                        module, manifest.ManifestVersion);
                     break;
             }
 
             return null;
         }
 
-        private static ModuleParameters BuildFromManifest(ManifestV1 manifest, ModuleManager module) {
-            var builtModuleParameters = new ModuleParameters {
-                _manifest = manifest,
+        private static ModuleParameters BuildFromManifest(ManifestV1 manifest, ModuleManager module)
+        {
+            var builtModuleParameters = new ModuleParameters
+            {
+                Manifest = manifest,
 
                 // TODO: Change manager registers so that they only need an instance of the ExternalModule and not specific params
-                _settingsManager    = SettingsManager.GetModuleInstance(module),
-                _contentsManager    = ContentsManager.GetModuleInstance(module),
-                _directoriesManager = DirectoriesManager.GetModuleInstance(module),
-                _gw2ApiManager      = GameService.Gw2Api.RegisterGw2ApiConnection(manifest, module.State.UserEnabledPermissions ?? new TokenPermission[0])
+                SettingsManager = SettingsManager.GetModuleInstance(module),
+                ContentsManager = ContentsManager.GetModuleInstance(module),
+                DirectoriesManager = DirectoriesManager.GetModuleInstance(module),
+                Gw2ApiManager = GameService.Gw2Api.RegisterGw2ApiConnection(manifest,
+                    module.State.UserEnabledPermissions ?? new TokenPermission[0])
             };
 
-            if (builtModuleParameters._gw2ApiManager == null) {
+            if (builtModuleParameters.Gw2ApiManager == null)
+            {
                 /* Indicates a conflict of user granted permissions and module required permissions
                  * How this could happen (without manually modifying settings):
                  *  1. User approves all required permissions for a module.
@@ -56,13 +58,13 @@ namespace Blish_HUD.Modules {
                  *  3. The user updates the module to a version that has a new required permission which haven't been explicitly approved.
                  */
                 // TODO: Show a popup instead that just asks the user if the new permission(s) is/are okay
-                Logger.Warn("An attempt was made to enable the module {module} before all of the required API permissions have been approved.", module.ToString());
+                Logger.Warn(
+                    "An attempt was made to enable the module {module} before all of the required API permissions have been approved.",
+                    module.ToString());
                 return null;
             }
 
             return builtModuleParameters;
         }
-
     }
-
 }

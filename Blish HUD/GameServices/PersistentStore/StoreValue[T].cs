@@ -1,27 +1,33 @@
 ﻿using System.ComponentModel;
 using Newtonsoft.Json;
 
-namespace Blish_HUD.PersistentStore {
+namespace Blish_HUD.PersistentStore
+{
     [JsonObject]
-    public class StoreValue<T> : StoreValue, INotifyPropertyChanged {
+    public class StoreValue<T> : StoreValue, INotifyPropertyChanged
+    {
+        public StoreValue()
+        {
+            /* NOOP */
+        }
+
+        public StoreValue(T defaultValue)
+        {
+            this._value = defaultValue;
+        }
 
         [JsonIgnore]
-        public T Value {
-            get => (T)_value;
-            set {
-                if (object.Equals(_value, value)) return;
+        public T Value
+        {
+            get => (T) this._value;
+            set
+            {
+                if (Equals(this._value, value)) return;
 
-                _value = value;
+                this._value = value;
 
                 OnPropertyChanged();
             }
         }
-
-        public StoreValue() { /* NOOP */ }
-
-        public StoreValue(T defaultValue) {
-            _value = defaultValue;
-        }
-
     }
 }

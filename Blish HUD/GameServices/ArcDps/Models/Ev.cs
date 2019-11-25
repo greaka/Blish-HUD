@@ -11,33 +11,33 @@
             bool isStateChange, bool isFlanking, bool isShields, bool isOffCycle, byte pad61, byte pad62, byte pad63,
             byte pad64)
         {
-            Time = time;
-            SrcAgent = srcAgent;
-            DstAgent = dstAgent;
-            Value = value;
-            BuffDmg = buffDmg;
-            OverStackValue = overStackValue;
-            SkillId = skillId;
-            SrcInstId = srcInstId;
-            DstInstId = dstInstId;
-            SrcMasterInstId = srcMasterInstId;
-            DstMasterInstId = dstMasterInstId;
-            Iff = iff;
-            Buff = buff;
-            Result = result;
-            IsActivation = isActivation;
-            IsBuffRemove = isBuffRemove;
-            IsNinety = isNinety;
-            IsFifty = isFifty;
-            IsMoving = isMoving;
-            IsStateChange = isStateChange;
-            IsFlanking = isFlanking;
-            IsShields = isShields;
-            IsOffCycle = isOffCycle;
-            Pad61 = pad61;
-            Pad62 = pad62;
-            Pad63 = pad63;
-            Pad64 = pad64;
+            this.Time = time;
+            this.SrcAgent = srcAgent;
+            this.DstAgent = dstAgent;
+            this.Value = value;
+            this.BuffDmg = buffDmg;
+            this.OverStackValue = overStackValue;
+            this.SkillId = skillId;
+            this.SrcInstId = srcInstId;
+            this.DstInstId = dstInstId;
+            this.SrcMasterInstId = srcMasterInstId;
+            this.DstMasterInstId = dstMasterInstId;
+            this.Iff = iff;
+            this.Buff = buff;
+            this.Result = result;
+            this.IsActivation = isActivation;
+            this.IsBuffRemove = isBuffRemove;
+            this.IsNinety = isNinety;
+            this.IsFifty = isFifty;
+            this.IsMoving = isMoving;
+            this.IsStateChange = isStateChange;
+            this.IsFlanking = isFlanking;
+            this.IsShields = isShields;
+            this.IsOffCycle = isOffCycle;
+            this.Pad61 = pad61;
+            this.Pad62 = pad62;
+            this.Pad63 = pad63;
+            this.Pad64 = pad64;
         }
 
         public ulong Time { get; }

@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
-namespace Blish_HUD.Pathing.Trails {
-    public interface ITrail {
-
+namespace Blish_HUD.Pathing.Trails
+{
+    public interface ITrail
+    {
         IReadOnlyList<Vector3> TrailPoints { get; }
 
         float TrailLength { get; }
@@ -12,6 +13,5 @@ namespace Blish_HUD.Pathing.Trails {
         float DistanceFromCamera { get; }
 
         float Opacity { get; }
-
     }
 }

@@ -1,29 +1,44 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Blish_HUD.PersistentStore {
-    public abstract class StoreValue {
+namespace Blish_HUD.PersistentStore
+{
+    public abstract class StoreValue
+    {
+        private object _defaultValue;
 
-        public class StoreValueConverter : JsonConverter<StoreValue> {
+        protected object _value;
 
+        [JsonIgnore]
+        public bool IsDefaultValue => Equals(this._value, this._defaultValue) && (this._defaultValue != null);
+
+        public StoreValue UpdateDefault(object defaultValue)
+        {
+            this._defaultValue = defaultValue;
+
+            return this;
+        }
+
+        public class StoreValueConverter : JsonConverter<StoreValue>
+        {
             private static readonly Logger Logger = Logger.GetLogger<StoreValueConverter>();
 
-            public override void WriteJson(JsonWriter writer, StoreValue value, JsonSerializer serializer) {
+            public override void WriteJson(JsonWriter writer, StoreValue value, JsonSerializer serializer)
+            {
                 JToken.FromObject(value._value, serializer).WriteTo(writer);
             }
 
-            public override StoreValue ReadJson(JsonReader reader, Type objectType, StoreValue existingValue, bool hasExistingValue, JsonSerializer serializer) {
+            public override StoreValue ReadJson(JsonReader reader, Type objectType, StoreValue existingValue,
+                bool hasExistingValue, JsonSerializer serializer)
+            {
                 var jObj = JToken.Load(reader) as JValue;
 
-                Type storeType = typeof(int);
-                switch (jObj.Type) {
+                var storeType = typeof(int);
+                switch (jObj.Type)
+                {
                     case JTokenType.Integer:
                         storeType = typeof(int);
                         break;
@@ -50,7 +65,9 @@ namespace Blish_HUD.PersistentStore {
                         break;
 
                     default:
-                        Logger.Warn("Persistent store value of type {storeValueType} is not supported by the PersistentStoreService.", jObj.Type);
+                        Logger.Warn(
+                            "Persistent store value of type {storeValueType} is not supported by the PersistentStoreService.",
+                            jObj.Type);
                         break;
                 }
 
@@ -60,33 +77,19 @@ namespace Blish_HUD.PersistentStore {
 
                 return storeBase;
             }
-
-        }
-
-        protected object _value;
-
-        private object _defaultValue;
-
-        [JsonIgnore]
-        public bool IsDefaultValue => object.Equals(_value, _defaultValue) && _defaultValue != null;
-
-        public StoreValue UpdateDefault(object defaultValue) {
-            _defaultValue = defaultValue;
-
-            return this;
         }
 
         #region Property Binding
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null) {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
             PersistentStoreService.StoreChanged = true;
         }
 
         #endregion
-
     }
 }

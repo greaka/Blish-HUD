@@ -1,22 +1,43 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ServiceModel;
-using Blish_HUD;
 using Blish_HUD.Content;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended.BitmapFonts;
 
-namespace Blish_HUD.Controls {
-    public class CachedStringRender : IDisposable {
+namespace Blish_HUD.Controls
+{
+    public class CachedStringRender : IDisposable
+    {
+        private static readonly ConcurrentDictionary<int, CachedStringRender> _cachedStringRenders =
+            new ConcurrentDictionary<int, CachedStringRender>();
 
-        private static readonly ConcurrentDictionary<int, CachedStringRender> _cachedStringRenders = new ConcurrentDictionary<int, CachedStringRender>();
         private static readonly NullControl _proxyControl = new NullControl();
 
-        private readonly AsyncTexture2D _cachedRender;
+        public CachedStringRender(string text,
+            BitmapFont font,
+            Rectangle destinationRectangle,
+            Color color,
+            bool wrap,
+            bool stroke,
+            int strokeDistance = 1,
+            HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment verticalAlignment = VerticalAlignment.Middle)
+        {
+            this.Text = text;
+            this.Font = font;
+            this.DestinationRectangle = new Rectangle(Point.Zero, destinationRectangle.Size);
+            this.Color = color;
+            this.Wrap = wrap;
+            this.Stroke = stroke;
+            this.StrokeDistance = strokeDistance;
+            this.HorizontalAlignment = horizontalAlignment;
+            this.VerticalAlignment = verticalAlignment;
 
-        public AsyncTexture2D CachedRender => _cachedRender;
+            this.CachedRender = new AsyncTexture2D(ContentService.Textures.TransparentPixel.Duplicate());
+        }
+
+        public AsyncTexture2D CachedRender { get; }
 
         public string Text { get; }
 
@@ -36,68 +57,54 @@ namespace Blish_HUD.Controls {
 
         public VerticalAlignment VerticalAlignment { get; }
 
-        public CachedStringRender(string              text,
-                                  BitmapFont          font,
-                                  Rectangle           destinationRectangle,
-                                  Color               color,
-                                  bool                wrap,
-                                  bool                stroke,
-                                  int                 strokeDistance      = 1,
-                                  HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left,
-                                  VerticalAlignment   verticalAlignment   = VerticalAlignment.Middle) {
-
-            this.Text                 = text;
-            this.Font                 = font;
-            this.DestinationRectangle = new Rectangle(Point.Zero, destinationRectangle.Size);
-            this.Color                = color;
-            this.Wrap                 = wrap;
-            this.Stroke               = stroke;
-            this.StrokeDistance       = strokeDistance;
-            this.HorizontalAlignment  = horizontalAlignment;
-            this.VerticalAlignment    = verticalAlignment;
-
-            _cachedRender = new AsyncTexture2D(ContentService.Textures.TransparentPixel.Duplicate());
+        public void Dispose()
+        {
+            this.CachedRender?.Dispose();
         }
 
-        private void InitRender(GraphicsDevice graphicsDevice) {
+        private void InitRender(GraphicsDevice graphicsDevice)
+        {
             var cachedRenderTarget = new RenderTarget2D(BlishHud.ActiveGraphicsDeviceManager.GraphicsDevice,
-                                                        this.DestinationRectangle.Width,
-                                                        this.DestinationRectangle.Height,
-                                                        false,
-                                                        SurfaceFormat.Color,
-                                                        DepthFormat.None,
-                                                        BlishHud.ActiveGraphicsDeviceManager.GraphicsDevice.PresentationParameters.MultiSampleCount,
-                                                        RenderTargetUsage.PreserveContents);
+                this.DestinationRectangle.Width,
+                this.DestinationRectangle.Height,
+                false,
+                SurfaceFormat.Color,
+                DepthFormat.None,
+                BlishHud.ActiveGraphicsDeviceManager.GraphicsDevice.PresentationParameters.MultiSampleCount,
+                RenderTargetUsage.PreserveContents);
 
             _proxyControl.Size = this.DestinationRectangle.Size;
 
             graphicsDevice.SetRenderTarget(cachedRenderTarget);
 
-            using (var spriteBatch = new SpriteBatch(graphicsDevice)) {
+            using (var spriteBatch = new SpriteBatch(graphicsDevice))
+            {
                 spriteBatch.Begin();
 
                 spriteBatch.DrawStringOnCtrl(_proxyControl,
-                                             this.Text,
-                                             this.Font,
-                                             this.DestinationRectangle,
-                                             this.Color,
-                                             this.Wrap,
-                                             this.Stroke,
-                                             this.StrokeDistance,
-                                             this.HorizontalAlignment,
-                                             this.VerticalAlignment);
+                    this.Text,
+                    this.Font,
+                    this.DestinationRectangle,
+                    this.Color,
+                    this.Wrap,
+                    this.Stroke,
+                    this.StrokeDistance,
+                    this.HorizontalAlignment,
+                    this.VerticalAlignment);
 
                 spriteBatch.End();
             }
 
             graphicsDevice.SetRenderTarget(null);
 
-            _cachedRender.SwapTexture(cachedRenderTarget);
+            this.CachedRender.SwapTexture(cachedRenderTarget);
         }
 
-        public override int GetHashCode() {
-            unchecked {
-                int hashCode = (this.Text != null ? this.Text.GetHashCode() : 0);
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = this.Text != null ? this.Text.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ (this.Font != null ? this.Font.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ this.DestinationRectangle.GetHashCode();
                 hashCode = (hashCode * 397) ^ this.Color.GetHashCode();
@@ -110,40 +117,50 @@ namespace Blish_HUD.Controls {
             }
         }
 
-        protected bool Equals(CachedStringRender other) {
-            return string.Equals(this.Text, other.Text) && Equals(this.Font, other.Font) && this.DestinationRectangle.Equals(other.DestinationRectangle) && this.Color.Equals(other.Color) && this.Wrap == other.Wrap && this.Stroke == other.Stroke && this.StrokeDistance == other.StrokeDistance && this.HorizontalAlignment == other.HorizontalAlignment && this.VerticalAlignment == other.VerticalAlignment;
+        protected bool Equals(CachedStringRender other)
+        {
+            return string.Equals(this.Text, other.Text) && Equals(this.Font, other.Font) &&
+                   this.DestinationRectangle.Equals(other.DestinationRectangle) && this.Color.Equals(other.Color) &&
+                   (this.Wrap == other.Wrap) && (this.Stroke == other.Stroke) &&
+                   (this.StrokeDistance == other.StrokeDistance) &&
+                   (this.HorizontalAlignment == other.HorizontalAlignment) &&
+                   (this.VerticalAlignment == other.VerticalAlignment);
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object obj)
+        {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
 
             return Equals((CachedStringRender) obj);
         }
 
-        public static CachedStringRender GetCachedStringRender(string              text,
-                                                               BitmapFont          font,
-                                                               Rectangle           destinationRectangle,
-                                                               Color               color,
-                                                               bool                wrap,
-                                                               bool                stroke,
-                                                               int                 strokeDistance      = 1,
-                                                               HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left,
-                                                               VerticalAlignment   verticalAlignment   = VerticalAlignment.Middle) {
+        public static CachedStringRender GetCachedStringRender(string text,
+            BitmapFont font,
+            Rectangle destinationRectangle,
+            Color color,
+            bool wrap,
+            bool stroke,
+            int strokeDistance = 1,
+            HorizontalAlignment horizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment verticalAlignment = VerticalAlignment.Middle)
+        {
+            var checkCsr = new CachedStringRender(text, font, destinationRectangle, color, wrap, stroke, strokeDistance,
+                horizontalAlignment, verticalAlignment);
 
-            var checkCsr = new CachedStringRender(text, font, destinationRectangle, color, wrap, stroke, strokeDistance, horizontalAlignment, verticalAlignment);
+            var csrHash = checkCsr.GetHashCode();
 
-            int csrHash = checkCsr.GetHashCode();
+            var containsCachedCsr = _cachedStringRenders.ContainsKey(csrHash);
 
-            bool containsCachedCsr = _cachedStringRenders.ContainsKey(csrHash);
-
-            if (containsCachedCsr && _cachedStringRenders.TryGetValue(csrHash, out var existingCsr)) {
+            if (containsCachedCsr && _cachedStringRenders.TryGetValue(csrHash, out var existingCsr))
+            {
                 checkCsr.Dispose();
                 return existingCsr;
             }
 
-            if (!containsCachedCsr) {
+            if (!containsCachedCsr)
+            {
                 _cachedStringRenders.TryAdd(csrHash, checkCsr);
             }
 
@@ -151,10 +168,5 @@ namespace Blish_HUD.Controls {
 
             return checkCsr;
         }
-
-        public void Dispose() {
-            _cachedRender?.Dispose();
-        }
-
     }
 }

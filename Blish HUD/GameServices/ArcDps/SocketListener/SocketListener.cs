@@ -21,17 +21,17 @@ namespace Blish_HUD.ArcDps
 
         public SocketListener(int maxConnectionCount, int bufferSize)
         {
-            _maxConnectionCount = maxConnectionCount;
-            _bufferSize = bufferSize;
-            _socketAsyncReceiveEventArgsPool = new SocketAsyncEventArgsPool();
-            _acceptedClientsSemaphore = new Semaphore(maxConnectionCount, maxConnectionCount);
+            this._maxConnectionCount = maxConnectionCount;
+            this._bufferSize = bufferSize;
+            this._socketAsyncReceiveEventArgsPool = new SocketAsyncEventArgsPool();
+            this._acceptedClientsSemaphore = new Semaphore(maxConnectionCount, maxConnectionCount);
 
             for (var i = 0; i < maxConnectionCount; i++)
             {
                 var socketAsyncEventArgs = new SocketAsyncEventArgs();
                 socketAsyncEventArgs.Completed += OnIoCompleted;
                 socketAsyncEventArgs.SetBuffer(new byte[bufferSize], 0, bufferSize);
-                _socketAsyncReceiveEventArgsPool.Push(socketAsyncEventArgs);
+                this._socketAsyncReceiveEventArgsPool.Push(socketAsyncEventArgs);
             }
         }
 
@@ -39,12 +39,12 @@ namespace Blish_HUD.ArcDps
 
         public void Start(IPEndPoint localEndPoint)
         {
-            _listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+            this._listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
             {
-                ReceiveBufferSize = _bufferSize
+                ReceiveBufferSize = this._bufferSize
             };
-            _listenSocket.Bind(localEndPoint);
-            _listenSocket.Listen(_maxConnectionCount);
+            this._listenSocket.Bind(localEndPoint);
+            this._listenSocket.Listen(this._maxConnectionCount);
             StartAccept(null);
             Mutex.WaitOne();
         }
@@ -53,7 +53,7 @@ namespace Blish_HUD.ArcDps
         {
             try
             {
-                _listenSocket.Close();
+                this._listenSocket.Close();
             }
             catch
             {
@@ -87,11 +87,11 @@ namespace Blish_HUD.ArcDps
                 acceptEventArg.AcceptSocket = null;
             }
 
-            _acceptedClientsSemaphore.WaitOne();
+            this._acceptedClientsSemaphore.WaitOne();
 
             try
             {
-                if (!_listenSocket.AcceptAsync(acceptEventArg)) ProcessAccept(acceptEventArg);
+                if (!this._listenSocket.AcceptAsync(acceptEventArg)) ProcessAccept(acceptEventArg);
             }
             catch
             {
@@ -104,7 +104,7 @@ namespace Blish_HUD.ArcDps
         {
             try
             {
-                var readEventArgs = _socketAsyncReceiveEventArgsPool.Pop();
+                var readEventArgs = this._socketAsyncReceiveEventArgsPool.Pop();
                 if (readEventArgs != null)
                 {
                     readEventArgs.UserToken = new AsyncUserToken(e.AcceptSocket);
@@ -123,7 +123,7 @@ namespace Blish_HUD.ArcDps
         {
             while (true)
             {
-                if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+                if ((e.BytesTransferred > 0) && (e.SocketError == SocketError.Success))
                 {
                     if (!(e.UserToken is AsyncUserToken token)) return;
                     ProcessReceivedData(token.DataStartOffset,
@@ -213,8 +213,8 @@ namespace Blish_HUD.ArcDps
         {
             var token = e.UserToken as AsyncUserToken;
             token?.Dispose();
-            _acceptedClientsSemaphore.Release();
-            _socketAsyncReceiveEventArgsPool.Push(e);
+            this._acceptedClientsSemaphore.Release();
+            this._socketAsyncReceiveEventArgsPool.Push(e);
         }
     }
 }

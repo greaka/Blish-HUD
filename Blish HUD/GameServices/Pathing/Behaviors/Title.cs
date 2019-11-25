@@ -1,43 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
+﻿using System.Collections.Generic;
 using Blish_HUD.Controls;
 using Blish_HUD.Entities;
 using Microsoft.Xna.Framework;
 
-namespace Blish_HUD.Pathing.Behaviors {
-
+namespace Blish_HUD.Pathing.Behaviors
+{
     [PathingBehavior("title")]
-    class Title<TPathable, TEntity> : PathingBehavior<TPathable, TEntity>, ILoadableBehavior
+    internal class Title<TPathable, TEntity> : PathingBehavior<TPathable, TEntity>, ILoadableBehavior
         where TPathable : ManagedPathable<TEntity>
-        where TEntity : Entity {
-
-        public string TitleText {
-            get => ManagedPathable.ManagedEntity.BasicTitleText;
-            set => ManagedPathable.ManagedEntity.BasicTitleText = value;
+        where TEntity : Entity
+    {
+        public Title(TPathable managedPathable) : base(managedPathable)
+        {
         }
 
-        public Color TitleColor {
-            get => ManagedPathable.ManagedEntity.BasicTitleTextColor;
-            set => ManagedPathable.ManagedEntity.BasicTitleTextColor = value;
+        public string TitleText
+        {
+            get => this.ManagedPathable.ManagedEntity.BasicTitleText;
+            set => this.ManagedPathable.ManagedEntity.BasicTitleText = value;
         }
 
-        public Title(TPathable managedPathable) : base(managedPathable) { }
+        public Color TitleColor
+        {
+            get => this.ManagedPathable.ManagedEntity.BasicTitleTextColor;
+            set => this.ManagedPathable.ManagedEntity.BasicTitleTextColor = value;
+        }
 
-        public void LoadWithAttributes(IEnumerable<PathableAttribute> attributes) {
-            bool colorSet = false;
+        public void LoadWithAttributes(IEnumerable<PathableAttribute> attributes)
+        {
+            var colorSet = false;
 
-            foreach (var attr in attributes) {
-                switch (attr.Name.ToLowerInvariant()) {
+            foreach (var attr in attributes)
+            {
+                switch (attr.Name.ToLowerInvariant())
+                {
                     case "title":
                         this.TitleText = attr.Value;
                         break;
                     case "title-color":
-                        switch (attr.Value.ToLowerInvariant()) {
+                        switch (attr.Value.ToLowerInvariant())
+                        {
                             case "white":
                                 this.TitleColor = Color.White;
                                 break;
@@ -52,18 +54,16 @@ namespace Blish_HUD.Pathing.Behaviors {
                                 this.TitleColor = Color.FromNonPremultiplied(85, 221, 85, 255);
                                 break;
                         }
+
                         colorSet = true;
-                        break;
-                    default:
                         break;
                 }
             }
 
-            if (!colorSet) {
+            if (!colorSet)
+            {
                 this.TitleColor = Color.FromNonPremultiplied(85, 221, 85, 255);
             }
         }
-
     }
-
 }

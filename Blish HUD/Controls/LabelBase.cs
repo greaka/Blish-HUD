@@ -4,115 +4,129 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Extended.BitmapFonts;
 
-namespace Blish_HUD.Controls {
-    public abstract class LabelBase : Control {
+namespace Blish_HUD.Controls
+{
+    public abstract class LabelBase : Control
+    {
+        protected bool _autoSizeHeight = false;
 
-        private CachedStringRender _labelRender;
+        protected bool _autoSizeWidth = false;
 
         protected bool _cacheLabel = false;
 
-        protected string _text;
-
         protected BitmapFont _font;
-
-        protected Color _textColor = Color.White;
 
         protected HorizontalAlignment _horizontalAlignment = HorizontalAlignment.Left;
 
-        protected VerticalAlignment _verticalAlignment = VerticalAlignment.Middle;
+        private CachedStringRender _labelRender;
 
-        protected bool _wrapText = false;
+        protected Color _shadowColor = Color.Black;
 
         protected bool _showShadow = false;
 
         protected bool _strokeText = false;
 
-        protected Color _shadowColor = Color.Black;
+        protected string _text;
 
-        protected bool _autoSizeWidth = false;
+        protected Color _textColor = Color.White;
 
-        protected bool _autoSizeHeight = false;
+        protected VerticalAlignment _verticalAlignment = VerticalAlignment.Middle;
 
-        public LabelBase() {
-            _font = Content.DefaultFont14;
+        protected bool _wrapText = false;
+
+        /// <summary>
+        ///     If either <see cref="AutoSizeWidth" /> or <see cref="AutoSizeHeight" /> is enabled,
+        ///     this will indicate the size of the label region after <see cref="RecalculateLayout" />
+        ///     has completed.
+        /// </summary>
+        protected Point LabelRegion = Point.Zero;
+
+        public LabelBase()
+        {
+            this._font = Content.DefaultFont14;
         }
 
-        protected override CaptureType CapturesInput() {
+        protected override CaptureType CapturesInput()
+        {
             //return string.IsNullOrEmpty(this.BasicTooltipText) ? CaptureType.None : CaptureType.Mouse;
             return CaptureType.Filter;
         }
 
-        /// <summary>
-        /// If either <see cref="AutoSizeWidth"/> or <see cref="AutoSizeHeight"/> is enabled,
-        /// this will indicate the size of the label region after <see cref="RecalculateLayout"/>
-        /// has completed.
-        /// </summary>
-        protected Point LabelRegion = Point.Zero;
+        public override void RecalculateLayout()
+        {
+            var lblRegionWidth = this._size.X;
+            var lblRegionHeight = this._size.Y;
 
-        public override void RecalculateLayout() {
-            int lblRegionWidth  = _size.X;
-            int lblRegionHeight = _size.Y;
-
-            if (_autoSizeWidth || _autoSizeHeight) {
+            if (this._autoSizeWidth || this._autoSizeHeight)
+            {
                 var textSize = GetTextDimensions();
 
-                if (_autoSizeWidth) {
-                    lblRegionWidth = (int)Math.Ceiling(textSize.Width + (_showShadow || _strokeText ? 1 : 0));
+                if (this._autoSizeWidth)
+                {
+                    lblRegionWidth =
+                        (int) Math.Ceiling(textSize.Width + (this._showShadow || this._strokeText ? 1 : 0));
                 }
 
-                if (_autoSizeHeight) {
-                    lblRegionHeight = (int)Math.Ceiling(textSize.Height + (_showShadow || _strokeText ? 1 : 0));
+                if (this._autoSizeHeight)
+                {
+                    lblRegionHeight =
+                        (int) Math.Ceiling(textSize.Height + (this._showShadow || this._strokeText ? 1 : 0));
                 }
             }
 
-            LabelRegion = new Point(lblRegionWidth, lblRegionHeight);
+            this.LabelRegion = new Point(lblRegionWidth, lblRegionHeight);
 
-            if (_cacheLabel) {
-                _labelRender = CachedStringRender.GetCachedStringRender(_text,
-                                                                       _font,
-                                                                       new Rectangle(Point.Zero, LabelRegion),
-                                                                       _textColor,
-                                                                       false,
-                                                                       _strokeText,
-                                                                       1,
-                                                                       _horizontalAlignment,
-                                                                       _verticalAlignment);
+            if (this._cacheLabel)
+            {
+                this._labelRender = CachedStringRender.GetCachedStringRender(this._text, this._font,
+                    new Rectangle(Point.Zero, this.LabelRegion), this._textColor,
+                    false, this._strokeText,
+                    1, this._horizontalAlignment, this._verticalAlignment);
             }
         }
 
-        protected Size2 GetTextDimensions(string text = null) {
-            text = text ?? _text;
+        protected Size2 GetTextDimensions(string text = null)
+        {
+            text = text ?? this._text;
 
-            if (!_autoSizeWidth && _wrapText) {
-                text = DrawUtil.WrapText(_font, text, LabelRegion.X > 0 ? LabelRegion.X : _size.X);
+            if (!this._autoSizeWidth && this._wrapText)
+            {
+                text = DrawUtil.WrapText(this._font, text, this.LabelRegion.X > 0 ? this.LabelRegion.X : this._size.X);
             }
 
-            return _font.MeasureString(text ?? _text);
+            return this._font.MeasureString(text ?? this._text);
         }
-        
-        protected void DrawText(SpriteBatch spriteBatch, Rectangle bounds, string text = null) {
-            text = text ?? _text;
 
-            if (_font == null || string.IsNullOrEmpty(text)) return;
+        protected void DrawText(SpriteBatch spriteBatch, Rectangle bounds, string text = null)
+        {
+            text = text ?? this._text;
 
-            if (_showShadow && !_strokeText) {
-                spriteBatch.DrawStringOnCtrl(this, text, _font, bounds.OffsetBy(1, 1), _shadowColor, _wrapText, _horizontalAlignment, _verticalAlignment);
+            if ((this._font == null) || string.IsNullOrEmpty(text)) return;
+
+            if (this._showShadow && !this._strokeText)
+            {
+                spriteBatch.DrawStringOnCtrl(this, text, this._font, bounds.OffsetBy(1, 1), this._shadowColor,
+                    this._wrapText, this._horizontalAlignment, this._verticalAlignment);
             }
-            
-            if (_cacheLabel && _labelRender != null) {
-                spriteBatch.DrawOnCtrl(this, _labelRender.CachedRender, bounds);
-            } else {
-                spriteBatch.DrawStringOnCtrl(this, text, _font, bounds, _textColor, _wrapText, _strokeText, 1, _horizontalAlignment, _verticalAlignment);
+
+            if (this._cacheLabel && (this._labelRender != null))
+            {
+                spriteBatch.DrawOnCtrl(this, this._labelRender.CachedRender, bounds);
+            }
+            else
+            {
+                spriteBatch.DrawStringOnCtrl(this, text, this._font, bounds, this._textColor, this._wrapText,
+                    this._strokeText, 1, this._horizontalAlignment, this._verticalAlignment);
             }
         }
 
-        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds) {
-            DrawText(spriteBatch, bounds, _text);
+        protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds)
+        {
+            DrawText(spriteBatch, bounds, this._text);
         }
 
-        protected override void DisposeControl() {
-
+        protected override void DisposeControl()
+        {
         }
-
     }
 }

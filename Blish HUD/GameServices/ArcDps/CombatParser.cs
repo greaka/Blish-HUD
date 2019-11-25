@@ -96,7 +96,11 @@ namespace Blish_HUD.ArcDps
 
         private static (Ag, int) ParseAg(byte[] data, int offset)
         {
-            string name; ulong id; uint profession; uint elite; uint self;
+            string name;
+            ulong id;
+            uint profession;
+            uint elite;
+            uint self;
             ushort team;
             (name, offset) = ParseString(data, offset);
             (id, offset) = U64(data, offset);
@@ -112,8 +116,8 @@ namespace Blish_HUD.ArcDps
         {
             ulong length;
             (length, offset) = U64(data, offset);
-            var str = Encoding.UTF8.GetString(data, offset, (int)length);
-            return (str, offset+(int)length);
+            var str = Encoding.UTF8.GetString(data, offset, (int) length);
+            return (str, offset + (int) length);
         }
 
         private static (ulong, int) U64(byte[] data, int offset)

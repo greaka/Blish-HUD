@@ -1,29 +1,36 @@
 ﻿using System;
 using Blish_HUD.Pathing.Entities;
 
-namespace Blish_HUD.Pathing.Trails {
-    public class BasicTrailPathable : ManagedPathable<Entities.Trail> {
+namespace Blish_HUD.Pathing.Trails
+{
+    public class BasicTrailPathable : ManagedPathable<Trail>
+    {
+        private bool _active;
 
         private float _scale = 1.0f;
-        private bool _active = false;
 
-        public override float Scale {
-            get => _scale;
-            set {
-                if (SetProperty(ref _scale, value)) UpdateBounds();
+        public BasicTrailPathable(Trail managedEntity) : base(managedEntity)
+        {
+        }
+
+        public override float Scale
+        {
+            get => this._scale;
+            set
+            {
+                if (SetProperty(ref this._scale, value)) UpdateBounds();
             }
         }
 
-        public override bool Active {
-            get => _active;
-            set => SetProperty(ref _active, value);
+        public override bool Active
+        {
+            get => this._active;
+            set => SetProperty(ref this._active, value);
         }
 
-        private void UpdateBounds() {
+        private void UpdateBounds()
+        {
             Console.WriteLine($"{nameof(UpdateBounds)} was called despite it not being implemented yet!");
         }
-
-        public BasicTrailPathable(Trail managedEntity) : base(managedEntity) { }
-        
     }
 }

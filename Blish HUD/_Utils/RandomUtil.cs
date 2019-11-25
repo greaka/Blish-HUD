@@ -1,30 +1,32 @@
-﻿using System;
-using MonoGame.Extended;
+﻿using MonoGame.Extended;
 
-namespace Blish_HUD {
-    public static class RandomUtil {
-
+namespace Blish_HUD
+{
+    public static class RandomUtil
+    {
         private static readonly FastRandom _sharedRandom;
 
-        static RandomUtil() {
+        static RandomUtil()
+        {
             _sharedRandom = new FastRandom();
         }
 
         /// <summary>
-        /// Returns a random integer that is within a specific range.
+        ///     Returns a random integer that is within a specific range.
         /// </summary>
-        public static int GetRandom(int minValue, int maxValue) {
+        public static int GetRandom(int minValue, int maxValue)
+        {
             return _sharedRandom.Next(minValue, maxValue);
         }
 
         /// <summary>
-        /// Returns a random integer that is within a specific range from a specified seed value.
+        ///     Returns a random integer that is within a specific range from a specified seed value.
         /// </summary>
-        public static (int, FastRandom) GetRandomWithSeed(int minValue, int maxValue, int seed) {
+        public static (int, FastRandom) GetRandomWithSeed(int minValue, int maxValue, int seed)
+        {
             var seededRandom = new FastRandom(seed);
 
             return (seededRandom.Next(minValue, maxValue), seededRandom);
         }
-
     }
 }

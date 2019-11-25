@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using Blish_HUD.Controls.Extern;
+﻿using Blish_HUD.Controls.Extern;
+
 namespace Blish_HUD.Controls.Intern
 {
     public static class Keyboard
@@ -15,10 +14,13 @@ namespace Blish_HUD.Controls.Intern
         private const uint MAPVK_VK_TO_VSC_EX = 0x04;
 
         /// <summary>
-        /// Presses a key.
+        ///     Presses a key.
         /// </summary>
         /// <param name="key">Virtual Key Short</param>
-        /// <param name="sendToSystem">Set if key message (or a combination of such) cannot be correctly interpreted by the game client.</param>
+        /// <param name="sendToSystem">
+        ///     Set if key message (or a combination of such) cannot be correctly interpreted by the game
+        ///     client.
+        /// </param>
         public static void Press(VirtualKeyShort key, bool sendToSystem = false)
         {
             if (!GameService.GameIntegration.Gw2IsRunning || sendToSystem)
@@ -32,28 +34,33 @@ namespace Blish_HUD.Controls.Intern
                         {
                             ki = new KeybdInput
                             {
-                                wScan = (ScanCodeShort)PInvoke.MapVirtualKey((uint)key, MAPVK_VK_TO_VSC),
+                                wScan = (ScanCodeShort) PInvoke.MapVirtualKey((uint) key, MAPVK_VK_TO_VSC),
                                 wVk = key
                             }
                         }
                     }
                 };
-                PInvoke.SendInput((uint)nInputs.Length, nInputs, Extern.Input.Size);
+                PInvoke.SendInput((uint) nInputs.Length, nInputs, Extern.Input.Size);
             }
             else
             {
-                uint vkCode = (uint)key;
-                ExtraKeyInfo lParam = new ExtraKeyInfo(){
-                    scanCode = (char)PInvoke.MapVirtualKey(vkCode, MAPVK_VK_TO_VSC)
+                var vkCode = (uint) key;
+                var lParam = new ExtraKeyInfo
+                {
+                    scanCode = (char) PInvoke.MapVirtualKey(vkCode, MAPVK_VK_TO_VSC)
                 };
                 PInvoke.PostMessage(GameService.GameIntegration.Gw2WindowHandle, WM_KEYDOWN, vkCode, lParam.GetInt());
             }
         }
+
         /// <summary>
-        /// Releases a key.
+        ///     Releases a key.
         /// </summary>
         /// <param name="key">Virtual Key Short</param>
-        /// <param name="sendToSystem">Set if key message (or a combination of such) cannot be correctly interpreted by the game client.</param>
+        /// <param name="sendToSystem">
+        ///     Set if key message (or a combination of such) cannot be correctly interpreted by the game
+        ///     client.
+        /// </param>
         public static void Release(VirtualKeyShort key, bool sendToSystem = false)
         {
             if (!GameService.GameIntegration.Gw2IsRunning || sendToSystem)
@@ -67,21 +74,21 @@ namespace Blish_HUD.Controls.Intern
                         {
                             ki = new KeybdInput
                             {
-                                wScan = (ScanCodeShort)PInvoke.MapVirtualKey((uint)key, MAPVK_VK_TO_VSC),
+                                wScan = (ScanCodeShort) PInvoke.MapVirtualKey((uint) key, MAPVK_VK_TO_VSC),
                                 wVk = key,
                                 dwFlags = KeyEventF.KEYUP
                             }
                         }
                     }
                 };
-                PInvoke.SendInput((uint)nInputs.Length, nInputs, Extern.Input.Size);
+                PInvoke.SendInput((uint) nInputs.Length, nInputs, Extern.Input.Size);
             }
             else
             {
-                uint vkCode = (uint)key;
-                ExtraKeyInfo lParam = new ExtraKeyInfo
+                var vkCode = (uint) key;
+                var lParam = new ExtraKeyInfo
                 {
-                    scanCode = (char)PInvoke.MapVirtualKey(vkCode, MAPVK_VK_TO_VSC),
+                    scanCode = (char) PInvoke.MapVirtualKey(vkCode, MAPVK_VK_TO_VSC),
                     repeatCount = 1,
                     prevKeyState = 1,
                     transitionState = 1
@@ -89,27 +96,32 @@ namespace Blish_HUD.Controls.Intern
                 PInvoke.PostMessage(GameService.GameIntegration.Gw2WindowHandle, WM_KEYUP, vkCode, lParam.GetInt());
             }
         }
+
         /// <summary>
-        /// Performs a keystroke inwhich a key is pressed and immediately released once.
+        ///     Performs a keystroke inwhich a key is pressed and immediately released once.
         /// </summary>
         /// <param name="key">Virtual Key Short</param>
-        /// <param name="sendToSystem">Set if key message (or a combination of such) cannot be correctly interpreted by the game client.</param>
+        /// <param name="sendToSystem">
+        ///     Set if key message (or a combination of such) cannot be correctly interpreted by the game
+        ///     client.
+        /// </param>
         public static void Stroke(VirtualKeyShort key, bool sendToSystem = false)
         {
             Press(key, sendToSystem);
             Release(key, sendToSystem);
         }
     }
-    class ExtraKeyInfo
+
+    internal class ExtraKeyInfo
     {
+        public ushort extendedKey, prevKeyState, transitionState;
         public ushort repeatCount;
         public char scanCode;
-        public ushort extendedKey, prevKeyState, transitionState;
 
         public int GetInt()
         {
-            return repeatCount | (scanCode << 16) | (extendedKey << 24) |
-                (prevKeyState << 30) | (transitionState << 31);
+            return this.repeatCount | (this.scanCode << 16) | (this.extendedKey << 24) |
+                   (this.prevKeyState << 30) | (this.transitionState << 31);
         }
-    };
+    }
 }

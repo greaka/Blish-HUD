@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace Blish_HUD.Controls.Extern
 {
     /// <summary>
-    /// Struct representing a point.
+    ///     Struct representing a point.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT
@@ -18,17 +18,20 @@ namespace Blish_HUD.Controls.Extern
             return new Point(point.X, point.Y);
         }
     }
+
     internal static class PInvoke
     {
         [DllImport("user32.dll")]
-        internal static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray), In] Input[] pInputs, int cbSize);
+        internal static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray)] [In]
+            Input[] pInputs, int cbSize);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool SendMessage(IntPtr hWnd, uint Msg, uint wParam, int lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        internal static extern bool PostMessage(IntPtr hWnd, uint Msg, uint wParam, int lParam); // sends a message asynchronously.
+        internal static extern bool
+            PostMessage(IntPtr hWnd, uint Msg, uint wParam, int lParam); // sends a message asynchronously.
 
         [DllImport("user32.dll")]
         internal static extern uint MapVirtualKey(uint uCode, uint uMapType);
@@ -37,8 +40,8 @@ namespace Blish_HUD.Controls.Extern
         internal static extern short VkKeyScan(char ch);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        internal static extern bool SendMessageCallbackA(IntPtr hWnd, uint Msg, uint wParam, int lParam, SendAsyncProc lpResultCallBack, uint dwData);
-        internal delegate void SendAsyncProc(IntPtr hWnd, uint uMsg, uint dwData, int lResult);
+        internal static extern bool SendMessageCallbackA(IntPtr hWnd, uint Msg, uint wParam, int lParam,
+            SendAsyncProc lpResultCallBack, uint dwData);
 
         [DllImport("user32.dll")]
         internal static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
@@ -58,5 +61,7 @@ namespace Blish_HUD.Controls.Extern
 
         [DllImport("user32.dll")]
         internal static extern bool GetCursorPos(out POINT lpPoint);
+
+        internal delegate void SendAsyncProc(IntPtr hWnd, uint uMsg, uint dwData, int lResult);
     }
 }

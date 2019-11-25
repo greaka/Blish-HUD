@@ -7,12 +7,12 @@
     {
         public CombatEvent(Ev ev, Ag src, Ag dst, string skillName, ulong id, ulong revision)
         {
-            Ev = ev;
-            Src = src;
-            Dst = dst;
-            SkillName = skillName;
-            Id = id;
-            Revision = revision;
+            this.Ev = ev;
+            this.Src = src;
+            this.Dst = dst;
+            this.SkillName = skillName;
+            this.Id = id;
+            this.Revision = revision;
         }
 
         public Ev Ev { get; }

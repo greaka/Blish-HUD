@@ -7,7 +7,7 @@ namespace Blish_HUD.ArcDps
     {
         public AsyncUserToken(Socket socket)
         {
-            Socket = socket;
+            this.Socket = socket;
         }
 
         public Socket Socket { get; }
@@ -21,7 +21,7 @@ namespace Blish_HUD.ArcDps
         {
             try
             {
-                Socket.Shutdown(SocketShutdown.Send);
+                this.Socket.Shutdown(SocketShutdown.Send);
             }
             catch (Exception)
             {
@@ -30,7 +30,7 @@ namespace Blish_HUD.ArcDps
 
             try
             {
-                Socket.Close();
+                this.Socket.Close();
             }
             catch (Exception)
             {

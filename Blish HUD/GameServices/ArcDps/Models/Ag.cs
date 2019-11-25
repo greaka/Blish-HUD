@@ -7,12 +7,12 @@
     {
         public Ag(string name, ulong id, uint profession, uint elite, uint self, ushort team)
         {
-            Name = name;
-            Id = id;
-            Profession = profession;
-            Elite = elite;
-            Self = self;
-            Team = team;
+            this.Name = name;
+            this.Id = id;
+            this.Profession = profession;
+            this.Elite = elite;
+            this.Self = self;
+            this.Team = team;
         }
 
         public string Name { get; }

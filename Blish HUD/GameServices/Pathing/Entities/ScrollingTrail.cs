@@ -2,113 +2,125 @@
 using Blish_HUD.Pathing.Trails;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Texture2D = Microsoft.Xna.Framework.Graphics.Texture2D;
 
-namespace Blish_HUD.Pathing.Entities {
-    public class ScrollingTrail : Trail, ITrail {
-
+namespace Blish_HUD.Pathing.Entities
+{
+    public class ScrollingTrail : Trail, ITrail
+    {
         public const float TRAIL_WIDTH = 20 * 0.0254f;
-
-        private float _animationSpeed = 1;
-
-        private float _fadeNear = 700;
-        private float _fadeFar = 900;
-        private float _scale = 1;
-        private float _opacity = 1;
-
-        public float AnimationSpeed {
-            get => _animationSpeed;
-            set {
-                if (SetProperty(ref _animationSpeed, value))
-                    _sections.ForEach(s => s.AnimationSpeed = value);
-            }
-        }
-
-        public override Texture2D TrailTexture {
-            get => _trailTexture;
-            set {
-                if (SetProperty(ref _trailTexture, value))
-                    _sections.ForEach(s => s.TrailTexture = value);
-            }
-        }
-
-        public float FadeNear {
-            get => _fadeNear;
-            set {
-                if (SetProperty(ref _fadeNear, value))
-                    _sections.ForEach(s => s.FadeNear = value);
-            }
-        }
-
-        public float FadeFar {
-            get => _fadeFar;
-            set {
-                if (SetProperty(ref _fadeFar, value))
-                    _sections.ForEach(s => s.FadeFar = value);
-            }
-        }
-
-        public float Scale {
-            get => _scale;
-            set {
-                if (SetProperty(ref _scale, value))
-                    _sections.ForEach(s => s.Scale = value);
-            }
-        }
-
-        public override float Opacity {
-            get => _opacity;
-            set {
-                if (SetProperty(ref _opacity, value))
-                    _sections.ForEach(s => s.Opacity = value);
-            }
-        }
 
         private readonly List<ScrollingTrailSection> _sections;
 
-        public ScrollingTrail(List<List<Vector3>> trailSections) {
-            _sections = new List<ScrollingTrailSection>();
+        private float _animationSpeed = 1;
+        private float _fadeFar = 900;
+
+        private float _fadeNear = 700;
+        private float _opacity = 1;
+        private float _scale = 1;
+
+        public ScrollingTrail(List<List<Vector3>> trailSections)
+        {
+            this._sections = new List<ScrollingTrailSection>();
 
             AddSections(trailSections);
         }
 
-        public ScrollingTrail() {
-            _sections = new List<ScrollingTrailSection>();
+        public ScrollingTrail()
+        {
+            this._sections = new List<ScrollingTrailSection>();
         }
 
-        public void AddSections(List<ScrollingTrailSection> newSections) {
+        public float AnimationSpeed
+        {
+            get => this._animationSpeed;
+            set
+            {
+                if (SetProperty(ref this._animationSpeed, value)) this._sections.ForEach(s => s.AnimationSpeed = value);
+            }
+        }
+
+        public override Texture2D TrailTexture
+        {
+            get => this._trailTexture;
+            set
+            {
+                if (SetProperty(ref this._trailTexture, value)) this._sections.ForEach(s => s.TrailTexture = value);
+            }
+        }
+
+        public float FadeNear
+        {
+            get => this._fadeNear;
+            set
+            {
+                if (SetProperty(ref this._fadeNear, value)) this._sections.ForEach(s => s.FadeNear = value);
+            }
+        }
+
+        public float FadeFar
+        {
+            get => this._fadeFar;
+            set
+            {
+                if (SetProperty(ref this._fadeFar, value)) this._sections.ForEach(s => s.FadeFar = value);
+            }
+        }
+
+        public float Scale
+        {
+            get => this._scale;
+            set
+            {
+                if (SetProperty(ref this._scale, value)) this._sections.ForEach(s => s.Scale = value);
+            }
+        }
+
+        public override float Opacity
+        {
+            get => this._opacity;
+            set
+            {
+                if (SetProperty(ref this._opacity, value)) this._sections.ForEach(s => s.Opacity = value);
+            }
+        }
+
+        public void AddSections(List<ScrollingTrailSection> newSections)
+        {
             newSections.ForEach(AddSection);
         }
 
-        public void AddSections(List<List<Vector3>> newSectionsPoints) {
+        public void AddSections(List<List<Vector3>> newSectionsPoints)
+        {
             newSectionsPoints.ForEach(AddSection);
         }
 
-        public void AddSection(ScrollingTrailSection newSection) {
-            newSection.AnimationSpeed = _animationSpeed;
-            newSection.FadeFar = _fadeFar;
-            newSection.FadeNear = _fadeNear;
-            newSection.Scale = _scale;
-            newSection.TrailTexture = _trailTexture;
-            newSection.Opacity = _opacity;
+        public void AddSection(ScrollingTrailSection newSection)
+        {
+            newSection.AnimationSpeed = this._animationSpeed;
+            newSection.FadeFar = this._fadeFar;
+            newSection.FadeNear = this._fadeNear;
+            newSection.Scale = this._scale;
+            newSection.TrailTexture = this._trailTexture;
+            newSection.Opacity = this._opacity;
 
-            _sections.Add(newSection);
+            this._sections.Add(newSection);
         }
 
-        public void AddSection(List<Vector3> newSectionPoints) {
+        public void AddSection(List<Vector3> newSectionPoints)
+        {
             AddSection(new ScrollingTrailSection(newSectionPoints));
         }
 
-        public override void Update(GameTime gameTime) {
+        public override void Update(GameTime gameTime)
+        {
             base.Update(gameTime);
 
-            _sections.ForEach(s => s.Update(gameTime));
+            this._sections.ForEach(s => s.Update(gameTime));
         }
 
-        public override void Draw(GraphicsDevice graphicsDevice) {
-            _sections.ForEach(s => s.Draw(graphicsDevice));
+        public override void Draw(GraphicsDevice graphicsDevice)
+        {
+            this._sections.ForEach(s => s.Draw(graphicsDevice));
         }
-
-
     }
 }

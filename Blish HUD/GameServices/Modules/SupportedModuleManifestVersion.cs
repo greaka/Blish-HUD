@@ -1,7 +1,7 @@
-﻿namespace Blish_HUD.Modules {
-
-    public enum SupportedModuleManifestVersion : int {
-        V1 = 1,
+﻿namespace Blish_HUD.Modules
+{
+    public enum SupportedModuleManifestVersion
+    {
+        V1 = 1
     }
-
 }

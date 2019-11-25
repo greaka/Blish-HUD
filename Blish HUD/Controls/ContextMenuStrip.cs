@@ -4,117 +4,128 @@ using Blish_HUD.Input;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Blish_HUD.Controls {
-
+namespace Blish_HUD.Controls
+{
     /// <summary>
-    /// Represents a right-click shortcut menu.  Can be assigned to <see cref="Control.Menu"/>.
+    ///     Represents a right-click shortcut menu.  Can be assigned to <see cref="Control.Menu" />.
     /// </summary>
-    public class ContextMenuStrip : Container {
-
+    public class ContextMenuStrip : Container
+    {
         private const int BORDER_PADDING = 2;
 
-        private const int ITEM_WIDTH          = 135;
-        private const int ITEM_HEIGHT         = 22;
+        private const int ITEM_WIDTH = 135;
+        private const int ITEM_HEIGHT = 22;
         private const int ITEM_VERTICALMARGIN = 6;
 
         private const int CONTROL_WIDTH = BORDER_PADDING + ITEM_WIDTH + BORDER_PADDING;
 
-        #region Load Static
-
-        private static readonly Texture2D _textureMenuEdge;
-
-        static ContextMenuStrip() {
-            _textureMenuEdge = Content.GetTexture("scrollbar-track");
-        }
-
-        #endregion
-
-        public ContextMenuStrip() {
+        public ContextMenuStrip()
+        {
             this.Visible = false;
             this.Width = CONTROL_WIDTH;
             this.ZIndex = Screen.CONTEXTMENU_BASEINDEX;
 
-            Input.LeftMouseButtonPressed  += MouseButtonPressed;
+            Input.LeftMouseButtonPressed += MouseButtonPressed;
             Input.RightMouseButtonPressed += MouseButtonPressed;
         }
 
-        protected override void OnShown(EventArgs e) {
+        protected override void OnShown(EventArgs e)
+        {
             this.Parent = GameService.Graphics.SpriteScreen;
 
             // If we have no children, don't display (and don't even call 'Shown' event)
-            if (!_children.Any()) {
+            if (!this._children.Any())
+            {
                 this.Visible = false;
                 return;
             }
-            
+
             base.OnShown(e);
         }
 
         /// <inheritdoc />
-        protected override void OnHidden(EventArgs e) {
+        protected override void OnHidden(EventArgs e)
+        {
             this.Parent = null;
 
             base.OnHidden(e);
         }
 
-        public void Show(Point position) {
+        public void Show(Point position)
+        {
             this.Location = position;
-            
+
             base.Show();
         }
 
-        public void Show(Control activeControl) {
-            if (activeControl is ContextMenuStripItem parentMenu) {
+        public void Show(Control activeControl)
+        {
+            if (activeControl is ContextMenuStripItem parentMenu)
+            {
                 this.Location = new Point(parentMenu.AbsoluteBounds.Right - 3, parentMenu.AbsoluteBounds.Top);
                 this.ZIndex = parentMenu.ZIndex + 1;
-            } else {
+            }
+            else
+            {
                 this.Location = activeControl.AbsoluteBounds.Location + new Point(0, activeControl.Height);
             }
 
             base.Show();
         }
 
-        public override void Hide() {
+        public override void Hide()
+        {
             this.Visible = false;
 
-            foreach (var cmsiChild in this.Children.Select(otherChild => otherChild as ContextMenuStripItem)) {
+            foreach (var cmsiChild in this.Children.Select(otherChild => otherChild as ContextMenuStripItem))
+            {
                 cmsiChild?.Submenu?.Hide();
             }
         }
 
-        protected override void OnChildAdded(ChildChangedEventArgs e) {
+        protected override void OnChildAdded(ChildChangedEventArgs e)
+        {
             base.OnChildAdded(e);
             OnChildMembershipChanged(e);
         }
 
-        protected override void OnChildRemoved(ChildChangedEventArgs e) {
+        protected override void OnChildRemoved(ChildChangedEventArgs e)
+        {
             base.OnChildRemoved(e);
             OnChildMembershipChanged(e);
         }
 
-        private void MouseButtonPressed(object sender, MouseEventArgs e) {
+        private void MouseButtonPressed(object sender, MouseEventArgs e)
+        {
             if (!this.Visible) return;
 
-            if (Input.ActiveControl is ContextMenuStripItem menuStrip) {
-                if (menuStrip.CanCheck) {
+            if (Input.ActiveControl is ContextMenuStripItem menuStrip)
+            {
+                if (menuStrip.CanCheck)
+                {
                     return;
                 }
             }
 
             if (!this.MouseOver)
-                this.Hide();
+                Hide();
         }
 
-        public ContextMenuStripItem AddMenuItem(string text) {
-            return new ContextMenuStripItem() {
+        public ContextMenuStripItem AddMenuItem(string text)
+        {
+            return new ContextMenuStripItem
+            {
                 Text = text,
                 Parent = this
             };
         }
 
-        private void OnChildMembershipChanged(ChildChangedEventArgs e) {
-            if (e.Added) {
-                if (!(e.ChangedChild is ContextMenuStripItem newChild)) {
+        private void OnChildMembershipChanged(ChildChangedEventArgs e)
+        {
+            if (e.Added)
+            {
+                if (!(e.ChangedChild is ContextMenuStripItem newChild))
+                {
                     e.Cancel = true;
                     return;
                 }
@@ -122,37 +133,47 @@ namespace Blish_HUD.Controls {
                 newChild.Height = ITEM_HEIGHT;
 
                 newChild.MouseEntered += ChildOnMouseEntered;
-                newChild.Resized      += ChildOnResized;
-            } else {
+                newChild.Resized += ChildOnResized;
+            }
+            else
+            {
                 e.ChangedChild.MouseEntered -= ChildOnMouseEntered;
-                e.ChangedChild.Resized      -= ChildOnResized;
+                e.ChangedChild.Resized -= ChildOnResized;
             }
 
-            this.Invalidate();
+            Invalidate();
         }
 
-        private void ChildOnMouseEntered(object sender, MouseEventArgs e) {
+        private void ChildOnMouseEntered(object sender, MouseEventArgs e)
+        {
             // Stop showing submenus if adjacent menu items are moused over
-            foreach (var ocCmsi in _children.Except(new[] { sender }).Select(otherChild => otherChild as ContextMenuStripItem)) {
+            foreach (var ocCmsi in this._children.Except(new[] {sender})
+                .Select(otherChild => otherChild as ContextMenuStripItem))
+            {
                 ocCmsi?.Submenu?.Hide();
             }
         }
 
-        private void ChildOnResized(object sender, ResizedEventArgs e) {
-            this.Invalidate();
+        private void ChildOnResized(object sender, ResizedEventArgs e)
+        {
+            Invalidate();
         }
 
-        protected override CaptureType CapturesInput() {
+        protected override CaptureType CapturesInput()
+        {
             return CaptureType.Filter;
         }
 
-        public override void RecalculateLayout() {
-            if (_children.Any()) {
-                int maxChildWidth = CONTROL_WIDTH;
+        public override void RecalculateLayout()
+        {
+            if (this._children.Any())
+            {
+                var maxChildWidth = CONTROL_WIDTH;
 
-                int lastChildBottom = BORDER_PADDING - ITEM_VERTICALMARGIN;
+                var lastChildBottom = BORDER_PADDING - ITEM_VERTICALMARGIN;
 
-                foreach (var menuItem in _children.Where(c => c.Visible)) {
+                foreach (var menuItem in this._children.Where(c => c.Visible))
+                {
                     maxChildWidth = Math.Max(menuItem.Width, maxChildWidth);
 
                     menuItem.Location = new Point(BORDER_PADDING, lastChildBottom + ITEM_VERTICALMARGIN);
@@ -160,56 +181,66 @@ namespace Blish_HUD.Controls {
                     lastChildBottom = menuItem.Bottom;
                 }
 
-                _size = new Point(maxChildWidth   + BORDER_PADDING * 2,
-                                  lastChildBottom + BORDER_PADDING);
+                this._size = new Point(maxChildWidth + BORDER_PADDING * 2,
+                    lastChildBottom + BORDER_PADDING);
 
-                foreach (var childItem in this.Children) {
+                foreach (var childItem in this.Children)
+                {
                     childItem.Width = maxChildWidth;
                 }
             }
         }
 
-        public override void PaintBeforeChildren(SpriteBatch spriteBatch, Rectangle bounds) {
+        public override void PaintBeforeChildren(SpriteBatch spriteBatch, Rectangle bounds)
+        {
             spriteBatch.DrawOnCtrl(this,
-                                   ContentService.Textures.Pixel,
-                                   new Rectangle(BORDER_PADDING,
-                                                 BORDER_PADDING,
-                                                 _size.X - BORDER_PADDING * 2,
-                                                 _size.Y - BORDER_PADDING * 2),
-                                   Color.FromNonPremultiplied(33, 32, 33, 255));
+                ContentService.Textures.Pixel,
+                new Rectangle(BORDER_PADDING,
+                    BORDER_PADDING, this._size.X - BORDER_PADDING * 2, this._size.Y - BORDER_PADDING * 2),
+                Color.FromNonPremultiplied(33, 32, 33, 255));
 
             // Left line
             spriteBatch.DrawOnCtrl(this,
-                                   _textureMenuEdge,
-                                   new Rectangle(0, 1, _textureMenuEdge.Width, _size.Y - BORDER_PADDING),
-                                   new Rectangle(0, 1, _textureMenuEdge.Width, _size.Y - BORDER_PADDING),
-                                   Color.White * 0.8f);
+                _textureMenuEdge,
+                new Rectangle(0, 1, _textureMenuEdge.Width, this._size.Y - BORDER_PADDING),
+                new Rectangle(0, 1, _textureMenuEdge.Width, this._size.Y - BORDER_PADDING),
+                Color.White * 0.8f);
 
             // Top line
             spriteBatch.DrawOnCtrl(this,
-                                   _textureMenuEdge,
-                                   new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, _size.X - BORDER_PADDING),
-                                   new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, _size.X - BORDER_PADDING),
-                                   Color.White * 0.8f,
-                                   -MathHelper.PiOver2,
-                                   Vector2.Zero);
+                _textureMenuEdge,
+                new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, this._size.X - BORDER_PADDING),
+                new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, this._size.X - BORDER_PADDING),
+                Color.White * 0.8f,
+                -MathHelper.PiOver2,
+                Vector2.Zero);
 
             // Bottom line
             spriteBatch.DrawOnCtrl(this,
-                                   _textureMenuEdge,
-                                   new Rectangle(1, _size.Y, _textureMenuEdge.Width, _size.X - BORDER_PADDING),
-                                   new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, _size.X - BORDER_PADDING),
-                                   Color.White * 0.8f,
-                                   -MathHelper.PiOver2,
-                                   Vector2.Zero);
+                _textureMenuEdge,
+                new Rectangle(1, this._size.Y, _textureMenuEdge.Width, this._size.X - BORDER_PADDING),
+                new Rectangle(1, BORDER_PADDING, _textureMenuEdge.Width, this._size.X - BORDER_PADDING),
+                Color.White * 0.8f,
+                -MathHelper.PiOver2,
+                Vector2.Zero);
 
             // Right line
             spriteBatch.DrawOnCtrl(this,
-                                   _textureMenuEdge,
-                                   new Rectangle(_size.X - _textureMenuEdge.Width, 1, _textureMenuEdge.Width, _size.Y - 2),
-                                   new Rectangle(0,                           1, _textureMenuEdge.Width, _size.Y - 2),
-                                   Color.White * 0.8f);
+                _textureMenuEdge,
+                new Rectangle(this._size.X - _textureMenuEdge.Width, 1, _textureMenuEdge.Width, this._size.Y - 2),
+                new Rectangle(0, 1, _textureMenuEdge.Width, this._size.Y - 2),
+                Color.White * 0.8f);
         }
-    }
 
+        #region Load Static
+
+        private static readonly Texture2D _textureMenuEdge;
+
+        static ContextMenuStrip()
+        {
+            _textureMenuEdge = Content.GetTexture("scrollbar-track");
+        }
+
+        #endregion
+    }
 }

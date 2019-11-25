@@ -1,88 +1,103 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Blish_HUD.Library.Glide.CustomLerpers;
+using Glide;
 using Microsoft.Xna.Framework;
 
-namespace Blish_HUD {
-
-    public class EaseAnimation : IDisposable {
-
-        public event EventHandler<EventArgs> AnimationCompleted;
-
-        private AnimationService.EasingFunctionDelegate AnimationFunction;
-
-        private double StartValue;
+namespace Blish_HUD
+{
+    public class EaseAnimation : IDisposable
+    {
+        private readonly AnimationService.EasingFunctionDelegate AnimationFunction;
         private double ChangeInValue;
         private double Duration;
 
+        private bool Repeat;
+
         private double StartTime;
 
-        public bool Active { get; private set; } = false;
+        private double StartValue;
+
+        public EaseAnimation(AnimationService.EasingFunctionDelegate animFunc, double startValue, double changeInValue,
+            double duration)
+        {
+            this.StartTime = DateTime.Now.TimeOfDay.TotalMilliseconds;
+
+            this.CurrentValue = startValue;
+            this.AnimationFunction = animFunc;
+            this.StartValue = startValue;
+            this.ChangeInValue = changeInValue;
+            this.Duration = duration;
+        }
+
+        public bool Active { get; private set; }
 
         public double CurrentValue { get; private set; }
-        public int CurrentValueInt { get { return (int)Math.Round(this.CurrentValue); } }
+        public int CurrentValueInt => (int) Math.Round(this.CurrentValue);
 
-        public bool Done { get; private set; } = false;
+        public bool Done { get; private set; }
 
-        private bool Repeat = false;
+        public void Dispose()
+        {
+            GameService.Animation.RemoveAnim(this);
+        }
 
-        public void Start(bool repeat = false) {
-            Repeat = repeat;
-            StartTime = DateTime.Now.TimeOfDay.TotalMilliseconds;
-            this.CurrentValue = StartValue;
+        public event EventHandler<EventArgs> AnimationCompleted;
+
+        public void Start(bool repeat = false)
+        {
+            this.Repeat = repeat;
+            this.StartTime = DateTime.Now.TimeOfDay.TotalMilliseconds;
+            this.CurrentValue = this.StartValue;
             this.Done = false;
             this.Active = true;
         }
 
-        public void Stop() {
+        public void Stop()
+        {
             this.Active = false;
         }
 
-        public void Reverse() {
-            double tempStartVal = StartValue;
-            Duration = Duration * this.CurrentValue / ChangeInValue;
-            StartValue = this.CurrentValue;
-            ChangeInValue = -this.CurrentValue;
+        public void Reverse()
+        {
+            var tempStartVal = this.StartValue;
+            this.Duration = this.Duration * this.CurrentValue / this.ChangeInValue;
+            this.StartValue = this.CurrentValue;
+            this.ChangeInValue = -this.CurrentValue;
 
             Start();
         }
 
-        public EaseAnimation(AnimationService.EasingFunctionDelegate animFunc, double startValue, double changeInValue, double duration) {
-            StartTime = DateTime.Now.TimeOfDay.TotalMilliseconds;
-
-            this.CurrentValue = startValue;
-            AnimationFunction = animFunc;
-            StartValue = startValue;
-            ChangeInValue = changeInValue;
-            Duration = duration;
-        }
-
-        public void Update(GameTime gameTime) {
+        public void Update(GameTime gameTime)
+        {
             // Ensure everything is able to get the last value from the tween before it stops updating
             if (this.Done) this.Active = false;
 
-            double currentTime = DateTime.Now.TimeOfDay.TotalMilliseconds - StartTime;
+            var currentTime = DateTime.Now.TimeOfDay.TotalMilliseconds - this.StartTime;
 
-            if (currentTime > Duration) {
-                currentTime = Duration;
+            if (currentTime > this.Duration)
+            {
+                currentTime = this.Duration;
                 this.Done = true;
 
-                this.AnimationCompleted?.Invoke(this, null);
+                AnimationCompleted?.Invoke(this, null);
             }
 
-            this.CurrentValue = AnimationFunction.Invoke(currentTime, StartValue, ChangeInValue, Duration);
+            this.CurrentValue =
+                this.AnimationFunction.Invoke(currentTime, this.StartValue, this.ChangeInValue, this.Duration);
 
-            if (this.Done && Repeat) Start(Repeat);
-        }
-
-        public void Dispose() {
-            GameService.Animation.RemoveAnim(this);
+            if (this.Done && this.Repeat) Start(this.Repeat);
         }
     }
 
-    public class AnimationService:GameService {
+    public class AnimationService : GameService
+    {
+        public delegate double EasingFunctionDelegate(double currentTime, double startValue, double changeInValue,
+            double duration);
 
-        public enum EasingMethod {
+        public enum EasingMethod
+        {
             Linear,
             EaseInQuad,
             EaseOutQuad,
@@ -107,66 +122,73 @@ namespace Blish_HUD {
             EaseInOutCirc
         }
 
-        public delegate double EasingFunctionDelegate(double currentTime, double startValue, double changeInValue, double duration);
-
-        private Dictionary<EasingMethod, EasingFunctionDelegate> EaseFuncs;
-
         private List<EaseAnimation> CurrentAnimations;
 
-        private Glide.Tweener _tweener;
-        public Glide.Tweener Tweener => _tweener;
+        private Dictionary<EasingMethod, EasingFunctionDelegate> EaseFuncs;
+        public Tweener Tweener { get; private set; }
 
-        protected override void Initialize() {
-            CurrentAnimations = new List<EaseAnimation>();
-            EaseFuncs = new Dictionary<EasingMethod, EasingFunctionDelegate>();
+        protected override void Initialize()
+        {
+            this.CurrentAnimations = new List<EaseAnimation>();
+            this.EaseFuncs = new Dictionary<EasingMethod, EasingFunctionDelegate>();
 
-            Glide.Tweener.SetLerper<Library.Glide.CustomLerpers.PointLerper>(typeof(Point));
+            Glide.Tween.TweenerImpl.SetLerper<PointLerper>(typeof(Point));
 
-            _tweener = new Glide.Tweener();
+            this.Tweener = new Tweener();
 
-            EaseFuncs.Add(EasingMethod.Linear, CalcLinear);
-            EaseFuncs.Add(EasingMethod.EaseInExpo, CalcExponentialEasingIn);
-            EaseFuncs.Add(EasingMethod.EaseInOutQuad, CalcQuadraticEasingInOut);
+            this.EaseFuncs.Add(EasingMethod.Linear, CalcLinear);
+            this.EaseFuncs.Add(EasingMethod.EaseInExpo, CalcExponentialEasingIn);
+            this.EaseFuncs.Add(EasingMethod.EaseInOutQuad, CalcQuadraticEasingInOut);
         }
 
-        public EaseAnimation Tween(double startValue, double changeInValue, double duration, EasingMethod method) {
-            var nanim = new EaseAnimation(EaseFuncs[method], startValue, changeInValue, duration);
-            CurrentAnimations.Add(nanim);
+        public EaseAnimation Tween(double startValue, double changeInValue, double duration, EasingMethod method)
+        {
+            var nanim = new EaseAnimation(this.EaseFuncs[method], startValue, changeInValue, duration);
+            this.CurrentAnimations.Add(nanim);
             return nanim;
         }
 
-        public void RemoveAnim(EaseAnimation anim) {
-            CurrentAnimations.Remove(anim);
+        public void RemoveAnim(EaseAnimation anim)
+        {
+            this.CurrentAnimations.Remove(anim);
         }
 
-        protected override void Update(GameTime gameTime) {
-            CurrentAnimations.Where(a => a.Active).ToList().ForEach(a => a.Update(gameTime));
+        protected override void Update(GameTime gameTime)
+        {
+            this.CurrentAnimations.Where(a => a.Active).ToList().ForEach(a => a.Update(gameTime));
 
-            this.Tweener.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            this.Tweener.Update((float) gameTime.ElapsedGameTime.TotalSeconds);
         }
 
         // Easing functions:
 
-        private double CalcLinear(double currentTime, double startValue, double changeInValue, double duration) {
+        private double CalcLinear(double currentTime, double startValue, double changeInValue, double duration)
+        {
             return changeInValue * currentTime / duration + startValue;
         }
 
-        private double CalcExponentialEasingIn(double currentTime, double startValue, double changeInValue, double duration) {
+        private double CalcExponentialEasingIn(double currentTime, double startValue, double changeInValue,
+            double duration)
+        {
             return changeInValue * Math.Pow(2, 10 * (currentTime / duration - 1)) + startValue;
         }
 
-        private double CalcQuadraticEasingInOut(double currentTime, double startValue, double changeInValue, double duration) {
+        private double CalcQuadraticEasingInOut(double currentTime, double startValue, double changeInValue,
+            double duration)
+        {
             currentTime /= duration / 2;
             if (currentTime < 1) return changeInValue / 2 * currentTime * currentTime + startValue;
             currentTime--;
             return -changeInValue / 2 * (currentTime * (currentTime - 2) - 1) + startValue;
         }
 
-        protected override void Load() {
+        protected override void Load()
+        {
             // TODO: Set up animation service
         }
 
-        protected override void Unload() {
+        protected override void Unload()
+        {
             // TODO: Clean up animation service
         }
     }

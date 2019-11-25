@@ -8,107 +8,125 @@ using Blish_HUD.Modules;
 using Blish_HUD.Settings;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
-using File = System.IO.File;
 
-namespace Blish_HUD {
-
-    public class ModuleService : GameService {
-
-        private static readonly Logger Logger = Logger.GetLogger<ModuleService>();
-
+namespace Blish_HUD
+{
+    public class ModuleService : GameService
+    {
         private const string MODULE_SETTINGS = "ModuleConfiguration";
 
         private const string MODULESTATES_CORE_SETTING = "ModuleStates";
-        private const string EXPORTED_VERSION_SETTING = "ExportedOn"; 
+        private const string EXPORTED_VERSION_SETTING = "ExportedOn";
 
         private const string MODULES_DIRECTORY = "modules";
 
         private const string MODULE_EXTENSION = ".bhm";
 
+        private static readonly Logger Logger = Logger.GetLogger<ModuleService>();
+
+        private readonly List<ModuleManager> _modules;
+
+        private SettingEntry<List<string>> _exportedOnVersions;
+
         private SettingCollection _moduleSettings;
+
+        public ModuleService()
+        {
+            this._modules = new List<ModuleManager>();
+        }
 
         private string ModulesDirectory => DirectoryUtil.RegisterDirectory(MODULES_DIRECTORY);
 
-        private SettingEntry<List<string>> _exportedOnVersions;
-        private SettingEntry<Dictionary<string, ModuleState>> _moduleStates;
+        public SettingEntry<Dictionary<string, ModuleState>> ModuleStates { get; private set; }
 
-        public SettingEntry<Dictionary<string, ModuleState>> ModuleStates => _moduleStates;
+        public IReadOnlyList<ModuleManager> Modules => this._modules.ToList();
 
-        private readonly List<ModuleManager> _modules;
-        public IReadOnlyList<ModuleManager> Modules => _modules.ToList();
+        protected override void Initialize()
+        {
+            this._moduleSettings = Settings.RegisterRootSettingCollection(MODULE_SETTINGS);
 
-        public ModuleService() {
-            _modules = new List<ModuleManager>();
+            DefineSettings(this._moduleSettings);
         }
 
-        protected override void Initialize() {
-            _moduleSettings = Settings.RegisterRootSettingCollection(MODULE_SETTINGS);
-
-            DefineSettings(_moduleSettings);
+        private void DefineSettings(SettingCollection settings)
+        {
+            this.ModuleStates =
+                settings.DefineSetting(MODULESTATES_CORE_SETTING, new Dictionary<string, ModuleState>());
+            this._exportedOnVersions = settings.DefineSetting(EXPORTED_VERSION_SETTING, new List<string>());
         }
 
-        private void DefineSettings(SettingCollection settings) {
-            _moduleStates       = settings.DefineSetting(MODULESTATES_CORE_SETTING, new Dictionary<string, ModuleState>());
-            _exportedOnVersions = settings.DefineSetting(EXPORTED_VERSION_SETTING,  new List<string>());
-        }
-
-        public ModuleManager RegisterModule(IDataReader moduleReader) {
+        public ModuleManager RegisterModule(IDataReader moduleReader)
+        {
             string manifestContents;
-            using (var manifestReader = new StreamReader(moduleReader.GetFileStream("manifest.json"))) {
+            using (var manifestReader = new StreamReader(moduleReader.GetFileStream("manifest.json")))
+            {
                 manifestContents = manifestReader.ReadToEnd();
             }
-            var moduleManifest = JsonConvert.DeserializeObject<Manifest>(manifestContents);
-            bool enableModule = false;
 
-            if (_moduleStates.Value.ContainsKey(moduleManifest.Namespace)) {
-                enableModule = _moduleStates.Value[moduleManifest.Namespace].Enabled;
-            } else {
-                _moduleStates.Value.Add(moduleManifest.Namespace, new ModuleState());
+            var moduleManifest = JsonConvert.DeserializeObject<Manifest>(manifestContents);
+            var enableModule = false;
+
+            if (this.ModuleStates.Value.ContainsKey(moduleManifest.Namespace))
+            {
+                enableModule = this.ModuleStates.Value[moduleManifest.Namespace].Enabled;
+            }
+            else
+            {
+                this.ModuleStates.Value.Add(moduleManifest.Namespace, new ModuleState());
             }
 
-            var moduleManager  = new ModuleManager(moduleManifest,
-                                                   _moduleStates.Value[moduleManifest.Namespace],
-                                                   moduleReader);
+            var moduleManager = new ModuleManager(moduleManifest, this.ModuleStates.Value[moduleManifest.Namespace],
+                moduleReader);
 
             moduleManager.Enabled = enableModule;
 
-            _modules.Add(moduleManager);
+            this._modules.Add(moduleManager);
 
             return moduleManager;
         }
 
-        private void ExtractPackagedModule(Stream fileData, IDataReader reader) {
-            string moduleName = string.Empty;
+        private void ExtractPackagedModule(Stream fileData, IDataReader reader)
+        {
+            var moduleName = string.Empty;
 
-            using (var moduleArchive = new ZipArchive(fileData, ZipArchiveMode.Read)) {
-                using (var manifestStream = moduleArchive.GetEntry("manifest.json")?.Open()) {
+            using (var moduleArchive = new ZipArchive(fileData, ZipArchiveMode.Read))
+            {
+                using (var manifestStream = moduleArchive.GetEntry("manifest.json")?.Open())
+                {
                     if (manifestStream == null) return;
 
                     string manifestContents;
-                    using (var manifestReader = new StreamReader(manifestStream)) {
+                    using (var manifestReader = new StreamReader(manifestStream))
+                    {
                         manifestContents = manifestReader.ReadToEnd();
                     }
 
                     var moduleManifest = JsonConvert.DeserializeObject<Manifest>(manifestContents);
 
-                    Logger.Info("Exporting internally packaged module {moduleName} ({$moduleNamespace}) v{$moduleVersion}", moduleManifest.Name, moduleManifest.Namespace, moduleManifest.Version);
+                    Logger.Info(
+                        "Exporting internally packaged module {moduleName} ({$moduleNamespace}) v{$moduleVersion}",
+                        moduleManifest.Name, moduleManifest.Namespace, moduleManifest.Version);
 
                     moduleName = moduleManifest.Name;
                 }
             }
 
-            if (!string.IsNullOrEmpty(moduleName)) {
-                File.WriteAllBytes(Path.Combine(this.ModulesDirectory, $"{moduleName}.bhm"), ((MemoryStream)fileData).GetBuffer());
+            if (!string.IsNullOrEmpty(moduleName))
+            {
+                File.WriteAllBytes(Path.Combine(this.ModulesDirectory, $"{moduleName}.bhm"),
+                    ((MemoryStream) fileData).GetBuffer());
             }
         }
 
-        private void UnpackInternalModules() {
+        private void UnpackInternalModules()
+        {
             var internalModulesReader = new ZipArchiveReader("ref.dat");
 
             internalModulesReader.LoadOnFileType(ExtractPackagedModule, ".bhm");
         }
 
-        protected override void Load() {
+        protected override void Load()
+        {
             /*
             RegisterModule(new Modules.DebugText());
             RegisterModule(new Modules.DiscordRichPresence());
@@ -137,46 +155,63 @@ namespace Blish_HUD {
 #endif
 
             // Get the base version string and see if we've exported the modules for this version yet
-            string baseVersionString = Program.OverlayVersion.BaseVersion().ToString();
-            if (!_exportedOnVersions.Value.Contains(baseVersionString)) {
+            var baseVersionString = Program.OverlayVersion.BaseVersion().ToString();
+            if (!this._exportedOnVersions.Value.Contains(baseVersionString))
+            {
                 UnpackInternalModules();
-                _exportedOnVersions.Value.Add(baseVersionString);
+                this._exportedOnVersions.Value.Add(baseVersionString);
             }
 
-            foreach (string moduleArchivePath in Directory.GetFiles(this.ModulesDirectory, $"*{MODULE_EXTENSION}", SearchOption.AllDirectories)) {
+            foreach (var moduleArchivePath in Directory.GetFiles(this.ModulesDirectory, $"*{MODULE_EXTENSION}",
+                SearchOption.AllDirectories))
+            {
                 var moduleReader = new ZipArchiveReader(moduleArchivePath);
 
-                if (moduleReader.FileExists("manifest.json")) {
+                if (moduleReader.FileExists("manifest.json"))
+                {
                     RegisterModule(moduleReader);
                 }
             }
         }
 
-        protected override void Unload() {
-            _modules.ForEach(s => {
-                try {
+        protected override void Unload()
+        {
+            this._modules.ForEach(s =>
+            {
+                try
+                {
                     // TODO: Unload module
-                } catch (Exception ex) {
-                    #if DEBUG
+                }
+                catch (Exception ex)
+                {
+#if DEBUG
                     // To assist in debugging
                     throw;
-                    #endif
-                    Logger.Error(ex, "Module '{$moduleName} ({$moduleNamespace}) threw an exception while being unloaded.", s.Manifest.Name, s.Manifest.Namespace);
+#endif
+                    Logger.Error(ex,
+                        "Module '{$moduleName} ({$moduleNamespace}) threw an exception while being unloaded.",
+                        s.Manifest.Name, s.Manifest.Namespace);
                 }
             });
         }
 
-        protected override void Update(GameTime gameTime) {
-            _modules.ForEach(s => {
-                                 try {
-                                     if (s.Enabled) s.ModuleInstance.DoUpdate(gameTime);
-                                 } catch (Exception ex) {
-                                     #if DEBUG
-                                     // To assist in debugging
-                                     throw;
-                                     #endif
-                                     Logger.Error(ex, "Module '{$moduleName} ({$moduleNamespace}) threw an exception.", s.Manifest.Name, s.Manifest.Namespace);
-                                 }
+        protected override void Update(GameTime gameTime)
+        {
+            this._modules.ForEach(s =>
+            {
+                try
+                {
+                    if (s.Enabled) s.ModuleInstance.DoUpdate(gameTime);
+                }
+                catch (Exception ex)
+                {
+#if DEBUG
+                    // To assist in debugging
+                    throw;
+#endif
+                    Logger.Error(ex, "Module '{$moduleName} ({$moduleNamespace}) threw an exception.", s.Manifest.Name,
+                        s.Manifest.Namespace);
+                }
             });
         }
     }

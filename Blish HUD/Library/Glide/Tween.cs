@@ -3,391 +3,415 @@ using System.Collections.Generic;
 
 namespace Glide
 {
-	public partial class Tween
-	{
-		[Flags]
-		public enum RotationUnit
-		{
-			Degrees,
-			Radians
-		}
+    public partial class Tween
+    {
+        [Flags]
+        public enum RotationUnit
+        {
+            Degrees,
+            Radians
+        }
 
-#region Callbacks
-		private Func<float, float> ease;
+        private MemberLerper.Behavior behavior;
+
+        private bool firstUpdate;
+        private readonly List<MemberLerper> lerpers;
+        private TweenerImpl Parent;
+        private readonly IRemoveTweens Remover;
+        private int repeatCount, timesRepeated;
+        private readonly List<object> start;
+        private readonly List<object> end;
+        private readonly Dictionary<string, int> varHash;
+
+        private readonly List<MemberAccessor> vars;
+
+        private Tween(object target, float duration, float delay, TweenerImpl parent)
+        {
+            this.Target = target;
+            this.Duration = duration;
+            this.Delay = delay;
+            this.Parent = parent;
+            this.Remover = parent;
+
+            this.firstUpdate = true;
+
+            this.varHash = new Dictionary<string, int>();
+            this.vars = new List<MemberAccessor>();
+            this.lerpers = new List<MemberLerper>();
+            this.start = new List<object>();
+            this.end = new List<object>();
+            this.behavior = MemberLerper.Behavior.None;
+        }
+
+        /// <summary>
+        ///     The time remaining before the tween ends or repeats.
+        /// </summary>
+        public float TimeRemaining => this.Duration - this.time;
+
+        /// <summary>
+        ///     A value between 0 and 1, where 0 means the tween has not been started and 1 means that it has completed.
+        /// </summary>
+        public float Completion
+        {
+            get
+            {
+                var c = this.time / this.Duration;
+                return c < 0 ? 0 : c > 1 ? 1 : c;
+            }
+        }
+
+        /// <summary>
+        ///     Whether the tween is currently looping.
+        /// </summary>
+        public bool Looping => this.repeatCount != 0;
+
+        /// <summary>
+        ///     The object this tween targets. Will be null if the tween represents a timer.
+        /// </summary>
+        public object Target { get; }
+
+        private void AddLerp(MemberLerper lerper, MemberAccessor info, object from, object to)
+        {
+            this.varHash.Add(info.MemberName, this.vars.Count);
+            this.vars.Add(info);
+
+            this.start.Add(from);
+            this.end.Add(to);
+
+            this.lerpers.Add(lerper);
+        }
+
+        private void Update(float elapsed)
+        {
+            if (this.firstUpdate)
+            {
+                this.firstUpdate = false;
+
+                var i = this.vars.Count;
+                while (i-- > 0)
+                {
+                    if (this.lerpers[i] != null) this.lerpers[i].Initialize(this.start[i], this.end[i], this.behavior);
+                }
+            }
+            else
+            {
+                if (this.Paused)
+                    return;
+
+                if (this.Delay > 0)
+                {
+                    this.Delay -= elapsed;
+                    if (this.Delay > 0)
+                        return;
+                }
+
+                if ((this.time == 0) && (this.timesRepeated == 0) && (this.begin != null)) this.begin();
+
+                this.time += elapsed;
+                var setTimeTo = this.time;
+                var t = this.time / this.Duration;
+                var doComplete = false;
+
+                if (this.time >= this.Duration)
+                {
+                    if (this.repeatCount != 0)
+                    {
+                        setTimeTo = 0;
+                        this.Delay = this.repeatDelay;
+                        this.timesRepeated++;
+
+                        if (this.repeatCount > 0)
+                            --this.repeatCount;
+
+                        if (this.repeatCount < 0)
+                            doComplete = true;
+                    }
+                    else
+                    {
+                        this.time = this.Duration;
+                        t = 1;
+                        this.Remover.Remove(this);
+                        doComplete = true;
+                    }
+                }
+
+                if (this.ease != null)
+                    t = this.ease(t);
+
+                var i = this.vars.Count;
+                while (i-- > 0)
+                {
+                    if (this.vars[i] != null)
+                        this.vars[i].Value = this.lerpers[i].Interpolate(t, this.vars[i].Value, this.behavior);
+                }
+
+                this.time = setTimeTo;
+
+                //	If the timer is zero here, we just restarted.
+                //	If reflect mode is on, flip start to end
+                if ((this.time == 0) &&
+                    ((this.behavior & MemberLerper.Behavior.Reflect) == MemberLerper.Behavior.Reflect))
+                    Reverse();
+
+                if (this.update != null) this.update();
+
+                if (doComplete && (this.complete != null)) this.complete();
+            }
+        }
+
+        #region Callbacks
+
+        private Func<float, float> ease;
         private Action begin, update, complete;
-#endregion
 
-#region Timing
-		public bool Paused { get; private set; }
+        #endregion
+
+        #region Timing
+
+        public bool Paused { get; private set; }
         private float Delay, repeatDelay;
-        private float Duration;
+        private readonly float Duration;
 
         private float time;
-#endregion
-		
-		private bool firstUpdate;
-        private int repeatCount, timesRepeated;
-        private MemberLerper.Behavior behavior;
-        
-        private List<MemberAccessor> vars;
-        private List<MemberLerper> lerpers;
-        private List<object> start, end;
-        private Dictionary<string, int> varHash;
-        private TweenerImpl Parent;
-        private IRemoveTweens Remover;
-        
-		/// <summary>
-		/// The time remaining before the tween ends or repeats.
-		/// </summary>
-        public float TimeRemaining { get { return Duration - time; } }
-        
-        /// <summary>
-        /// A value between 0 and 1, where 0 means the tween has not been started and 1 means that it has completed.
-        /// </summary>
-        public float Completion { get { var c = time / Duration; return c < 0 ? 0 : (c > 1 ? 1 : c); } }
-        
-        /// <summary>
-        /// Whether the tween is currently looping.
-        /// </summary>
-        public bool Looping { get { return repeatCount != 0; } }
-        
-        /// <summary>
-        /// The object this tween targets. Will be null if the tween represents a timer.
-        /// </summary>
-        public object Target { get; private set; }
-		
-		private Tween(object target, float duration, float delay, TweenerImpl parent)
-		{
-            this.Target = target;
-            Duration = duration;
-            Delay = delay;
-            Parent = parent;
-            Remover = parent;
-            
-			firstUpdate = true;
-			
-			varHash = new Dictionary<string, int>();
-			vars = new List<MemberAccessor>();
-			lerpers = new List<MemberLerper>();
-			start = new List<object>();
-			end = new List<object>();
-			behavior = MemberLerper.Behavior.None;
-		}
 
-		private void AddLerp(MemberLerper lerper, MemberAccessor info, object from, object to)
-		{
-			varHash.Add(info.MemberName, vars.Count);
-			vars.Add(info);
-			
-			start.Add(from);
-			end.Add(to);
-			
-			lerpers.Add(lerper);
-		}
-		
-        private void Update(float elapsed)
-		{
-        	if (firstUpdate)
-        	{
-        		firstUpdate = false;
-        		
-				var i = vars.Count;
-				while (i --> 0)
-				{
-					if (lerpers[i] != null)
-						lerpers[i].Initialize(start[i], end[i], behavior);
-				}
-        	}
-        	else
-        	{
-				if (this.Paused)
-					return;
-				
-				if (Delay > 0)
-				{
-					Delay -= elapsed;
-					if (Delay > 0)
-						return;
-				}
-				
-				if (time == 0 && timesRepeated == 0 && begin != null)
-					begin();
-				
-				time += elapsed;
-				float setTimeTo = time;
-				float t = time / Duration;
-				bool doComplete = false;
-				
-				if (time >= Duration)
-				{
-					if (repeatCount != 0)
-					{
-						setTimeTo = 0;
-						Delay = repeatDelay;
-						timesRepeated++;
-						
-						if (repeatCount > 0)
-							--repeatCount;
-						
-						if (repeatCount < 0)
-							doComplete = true;
-					}
-					else
-					{
-						time = Duration;
-						t = 1;
-	                    Remover.Remove(this);
-	                    doComplete = true;
-					}
-				}
-				
-				if (ease != null)
-					t = ease(t);
-				
-				int i = vars.Count;
-				while (i --> 0)
-				{
-					if (vars[i] != null)
-						vars[i].Value = lerpers[i].Interpolate(t, vars[i].Value, behavior);
-				}
-				
-				time = setTimeTo;
-				
-				//	If the timer is zero here, we just restarted.
-				//	If reflect mode is on, flip start to end
-				if (time == 0 && (behavior & MemberLerper.Behavior.Reflect) == MemberLerper.Behavior.Reflect)
-					Reverse();
-				
-				if (update != null)
-					update();
-				
-				if (doComplete && complete != null)
-					complete();
-        	}
-		}
-		
-#region Behavior
-		/// <summary>
-		/// Apply target values to a starting point before tweening.
-		/// </summary>
-		/// <param name="values">The values to apply, in an anonymous type ( new { prop1 = 100, prop2 = 0} ).</param>
-		/// <returns>A reference to this.</returns>
-		public Tween From(object values)
-		{
-			var props = values.GetType().GetProperties();
-			for (int i = 0; i < props.Length; ++i)
-			{
-				var property = props[i];
-				var propValue = property.GetValue(values, null);
-				
-				int index = -1;
-				if (varHash.TryGetValue(property.Name, out index))
-				{
-					//	if we're already tweening this value, adjust the range
-					start[index] = propValue;
-				}
-				
-				//	if we aren't tweening this value, just set it
-				var info = new MemberAccessor(this.Target, property.Name, true);
-				info.Value = propValue;
-			}
-			
-			return this;
-		}
-		
-		/// <summary>
-		/// Set the easing function.
-		/// </summary>
-		/// <param name="ease">The Easer to use.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween Ease(Func<float, float> ease)
-		{
-			this.ease = ease;
-			return this;
-		}
-		
-		/// <summary>
-		/// Set a function to call when the tween begins (useful when using delays). Can be called multiple times for compound callbacks.
-		/// </summary>
-		/// <param name="callback">The function that will be called when the tween starts, after the delay.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween OnBegin(Action callback)
-		{
-			if (begin == null) begin = callback;
-			else begin += callback;
-			return this;
-		}
-		
-		/// <summary>
-		/// Set a function to call when the tween finishes. Can be called multiple times for compound callbacks.
-		/// If the tween repeats infinitely, this will be called each time; otherwise it will only run when the tween is finished repeating.
-		/// </summary>
-		/// <param name="callback">The function that will be called on tween completion.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween OnComplete(Action callback)
-		{
-			if (complete == null) complete = callback;
-			else complete += callback;
-			return this;
-		}
-		
-		/// <summary>
-		/// Set a function to call as the tween updates. Can be called multiple times for compound callbacks.
-		/// </summary>
-		/// <param name="callback">The function to use.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween OnUpdate(Action callback)
-		{
-			if (update == null) update = callback;
-			else update += callback;
-			return this;
-		}
-		
-		/// <summary>
-		/// Enable repeating.
-		/// </summary>
-		/// <param name="times">Number of times to repeat. Leave blank or pass a negative number to repeat infinitely.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween Repeat(int times = -1)
-		{
-			repeatCount = times;
-			return this;
-		}
-		
-		/// <summary>
-		/// Set a delay for when the tween repeats.
-		/// </summary>
-		/// <param name="delay">How long to wait before repeating.</param>
-		/// <returns>A reference to this.</returns>
-		public Tween RepeatDelay(float delay)
-		{
-			repeatDelay = delay;
-			return this;
-		}
-		
-		/// <summary>
-		/// Sets the tween to reverse every other time it repeats. Repeating must be enabled for this to have any effect.
-		/// </summary>
-		/// <returns>A reference to this.</returns>
-		public Tween Reflect()
-		{
-			behavior |= MemberLerper.Behavior.Reflect;
-			return this;
-		}
-		
-		/// <summary>
-		/// Swaps the start and end values of the tween.
-		/// </summary>
-		/// <returns>A reference to this.</returns>
-		public Tween Reverse()
-		{	
-			int i = vars.Count;			
-			while (i --> 0)
-			{
-				var s = start[i];
-				var e = end[i];
-				
-				//	Set start to end and end to start
-				start[i] = e;
-				end[i] = s;
-				
-				lerpers[i].Initialize(e, s, behavior);
-			}
-			
-			return this;
-		}
-		
-		/// <summary>
-		/// Whether this tween handles rotation.
-		/// </summary>
-		/// <returns>A reference to this.</returns>
-		public Tween Rotation(RotationUnit unit = RotationUnit.Degrees)
-		{
-			behavior |= MemberLerper.Behavior.Rotation;
-			behavior |= (unit == RotationUnit.Degrees) ? MemberLerper.Behavior.RotationDegrees : MemberLerper.Behavior.RotationRadians;
+        #endregion
 
-			return this;
-		}
-		
-		/// <summary>
-		/// Whether tweened values should be rounded to integer values.
-		/// </summary>
-		/// <returns>A reference to this.</returns>
-		public Tween Round()
-		{
-			behavior |= MemberLerper.Behavior.Round;
-			return this;
-		}
-#endregion
-				
-#region Control
-		/// <summary>
-		/// Cancel tweening given properties.
-		/// </summary>
-		/// <param name="properties"></param>
-		public void Cancel(params string[] properties)
-		{
-			var canceled = 0;
-			for (int i = 0; i < properties.Length; ++i)
-			{
-				var index = 0;
-				if (!varHash.TryGetValue(properties[i], out index))
-					continue;
-				
-				varHash.Remove(properties[i]);
-				vars[index] = null;
-				lerpers[index] = null;
-				start[index] = null;
-				end[index] = null;
-				
-				canceled++;
-			}
-			
-			if (canceled == vars.Count)
-				Cancel();
-		}
-		
-		/// <summary>
-		/// Remove tweens from the tweener without calling their complete functions.
-		/// </summary>
-		public void Cancel()
-		{
-            Remover.Remove(this);
-		}
-		
-		/// <summary>
-		/// Assign tweens their final value and remove them from the tweener.
-		/// </summary>
-		public void CancelAndComplete()
-		{
-			time = Duration;
-			update = null;
-            Remover.Remove(this);
-		}
-		
-		/// <summary>
-		/// Set tweens to pause. They won't update and their delays won't tick down.
-		/// </summary>
-		public void Pause()
-		{
+        #region Behavior
+
+        /// <summary>
+        ///     Apply target values to a starting point before tweening.
+        /// </summary>
+        /// <param name="values">The values to apply, in an anonymous type ( new { prop1 = 100, prop2 = 0} ).</param>
+        /// <returns>A reference to this.</returns>
+        public Tween From(object values)
+        {
+            var props = values.GetType().GetProperties();
+            for (var i = 0; i < props.Length; ++i)
+            {
+                var property = props[i];
+                var propValue = property.GetValue(values, null);
+
+                var index = -1;
+                if (this.varHash.TryGetValue(property.Name, out index))
+                {
+                    //	if we're already tweening this value, adjust the range
+                    this.start[index] = propValue;
+                }
+
+                //	if we aren't tweening this value, just set it
+                var info = new MemberAccessor(this.Target, property.Name);
+                info.Value = propValue;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Set the easing function.
+        /// </summary>
+        /// <param name="ease">The Easer to use.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween Ease(Func<float, float> ease)
+        {
+            this.ease = ease;
+            return this;
+        }
+
+        /// <summary>
+        ///     Set a function to call when the tween begins (useful when using delays). Can be called multiple times for compound
+        ///     callbacks.
+        /// </summary>
+        /// <param name="callback">The function that will be called when the tween starts, after the delay.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween OnBegin(Action callback)
+        {
+            if (this.begin == null)
+                this.begin = callback;
+            else
+                this.begin += callback;
+            return this;
+        }
+
+        /// <summary>
+        ///     Set a function to call when the tween finishes. Can be called multiple times for compound callbacks.
+        ///     If the tween repeats infinitely, this will be called each time; otherwise it will only run when the tween is
+        ///     finished repeating.
+        /// </summary>
+        /// <param name="callback">The function that will be called on tween completion.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween OnComplete(Action callback)
+        {
+            if (this.complete == null)
+                this.complete = callback;
+            else
+                this.complete += callback;
+            return this;
+        }
+
+        /// <summary>
+        ///     Set a function to call as the tween updates. Can be called multiple times for compound callbacks.
+        /// </summary>
+        /// <param name="callback">The function to use.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween OnUpdate(Action callback)
+        {
+            if (this.update == null)
+                this.update = callback;
+            else
+                this.update += callback;
+            return this;
+        }
+
+        /// <summary>
+        ///     Enable repeating.
+        /// </summary>
+        /// <param name="times">Number of times to repeat. Leave blank or pass a negative number to repeat infinitely.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween Repeat(int times = -1)
+        {
+            this.repeatCount = times;
+            return this;
+        }
+
+        /// <summary>
+        ///     Set a delay for when the tween repeats.
+        /// </summary>
+        /// <param name="delay">How long to wait before repeating.</param>
+        /// <returns>A reference to this.</returns>
+        public Tween RepeatDelay(float delay)
+        {
+            this.repeatDelay = delay;
+            return this;
+        }
+
+        /// <summary>
+        ///     Sets the tween to reverse every other time it repeats. Repeating must be enabled for this to have any effect.
+        /// </summary>
+        /// <returns>A reference to this.</returns>
+        public Tween Reflect()
+        {
+            this.behavior |= MemberLerper.Behavior.Reflect;
+            return this;
+        }
+
+        /// <summary>
+        ///     Swaps the start and end values of the tween.
+        /// </summary>
+        /// <returns>A reference to this.</returns>
+        public Tween Reverse()
+        {
+            var i = this.vars.Count;
+            while (i-- > 0)
+            {
+                var s = this.start[i];
+                var e = this.end[i];
+
+                //	Set start to end and end to start
+                this.start[i] = e;
+                this.end[i] = s;
+
+                this.lerpers[i].Initialize(e, s, this.behavior);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Whether this tween handles rotation.
+        /// </summary>
+        /// <returns>A reference to this.</returns>
+        public Tween Rotation(RotationUnit unit = RotationUnit.Degrees)
+        {
+            this.behavior |= MemberLerper.Behavior.Rotation;
+            this.behavior |= unit == RotationUnit.Degrees
+                ? MemberLerper.Behavior.RotationDegrees
+                : MemberLerper.Behavior.RotationRadians;
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Whether tweened values should be rounded to integer values.
+        /// </summary>
+        /// <returns>A reference to this.</returns>
+        public Tween Round()
+        {
+            this.behavior |= MemberLerper.Behavior.Round;
+            return this;
+        }
+
+        #endregion
+
+        #region Control
+
+        /// <summary>
+        ///     Cancel tweening given properties.
+        /// </summary>
+        /// <param name="properties"></param>
+        public void Cancel(params string[] properties)
+        {
+            var canceled = 0;
+            for (var i = 0; i < properties.Length; ++i)
+            {
+                var index = 0;
+                if (!this.varHash.TryGetValue(properties[i], out index))
+                    continue;
+
+                this.varHash.Remove(properties[i]);
+                this.vars[index] = null;
+                this.lerpers[index] = null;
+                this.start[index] = null;
+                this.end[index] = null;
+
+                canceled++;
+            }
+
+            if (canceled == this.vars.Count)
+                Cancel();
+        }
+
+        /// <summary>
+        ///     Remove tweens from the tweener without calling their complete functions.
+        /// </summary>
+        public void Cancel()
+        {
+            this.Remover.Remove(this);
+        }
+
+        /// <summary>
+        ///     Assign tweens their final value and remove them from the tweener.
+        /// </summary>
+        public void CancelAndComplete()
+        {
+            this.time = this.Duration;
+            this.update = null;
+            this.Remover.Remove(this);
+        }
+
+        /// <summary>
+        ///     Set tweens to pause. They won't update and their delays won't tick down.
+        /// </summary>
+        public void Pause()
+        {
             this.Paused = true;
-		}
-		
-		/// <summary>
-		/// Toggle tweens' paused value.
-		/// </summary>
-		public void PauseToggle()
-		{
+        }
+
+        /// <summary>
+        ///     Toggle tweens' paused value.
+        /// </summary>
+        public void PauseToggle()
+        {
             this.Paused = !this.Paused;
-		}
-		
-		/// <summary>
-		/// Resumes tweens from a paused state.
-		/// </summary>
-		public void Resume()
-		{
+        }
+
+        /// <summary>
+        ///     Resumes tweens from a paused state.
+        /// </summary>
+        public void Resume()
+        {
             this.Paused = false;
-		}
-#endregion
-	}
+        }
+
+        #endregion
+    }
 }

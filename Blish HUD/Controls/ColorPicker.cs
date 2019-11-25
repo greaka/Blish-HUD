@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-
-namespace Blish_HUD.Controls {
-
+﻿namespace Blish_HUD.Controls
+{
     // TODO: The ColorPicker needs updates for events, it should probably inherit from FlowPanel,
     // and needs to get reconnected once we have Gorrik.NET included in the project
     //[EditorBrowsable(EditorBrowsableState.Never)]
@@ -21,7 +13,7 @@ namespace Blish_HUD.Controls {
     //    public ObservableCollection<BHGw2Api.DyeColor> Colors { get; protected set; }
 
     //    private Dictionary<BHGw2Api.DyeColor, ColorBox> ColorBoxes;
-        
+
     //    private int hColors;
 
     //    private BHGw2Api.DyeColor _selectedColor;
@@ -73,7 +65,7 @@ namespace Blish_HUD.Controls {
     //                        Parent = this
     //                    };
     //                    ColorBoxes.Add(addItem, cb);
-                        
+
     //                    cb.LeftMouseButtonPressed += delegate {
     //                        ColorBoxes.Values.ToList().ForEach(box => box.Selected = false);
 

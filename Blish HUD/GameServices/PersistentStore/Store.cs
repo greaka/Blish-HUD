@@ -1,23 +1,70 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Blish_HUD.PersistentStore {
-    public class Store {
+namespace Blish_HUD.PersistentStore
+{
+    public class Store
+    {
+        [JsonProperty("Stores")]
+        private Dictionary<string, Store> _substores = new Dictionary<string, Store>(StringComparer.OrdinalIgnoreCase);
 
-        public class PersistentStoreConverter : JsonConverter<Store> {
+        [JsonProperty("Values")]
+        private Dictionary<string, StoreValue> _values =
+            new Dictionary<string, StoreValue>(StringComparer.OrdinalIgnoreCase);
 
-            public override void WriteJson(JsonWriter writer, Store value, JsonSerializer serializer) {
-                JObject entryObject = new JObject();
+        private Dictionary<string, StoreValue> _recordedValues
+        {
+            get => this._values.Where(pair => !pair.Value.IsDefaultValue)
+                .ToDictionary(dict => dict.Key, dict => dict.Value);
+            set => this._values = value;
+        }
 
-                if (value._substores.Any()) {
+        public Store GetSubstore(string substoreName)
+        {
+            if (!this._substores.ContainsKey(substoreName))
+            {
+                this._substores.Add(substoreName, new Store());
+                PersistentStoreService.StoreChanged = true;
+            }
+
+            return this._substores[substoreName];
+        }
+
+        public StoreValue<T> GetOrSetValue<T>(string valueName, T defaultValue = default)
+        {
+            if (!this._values.ContainsKey(valueName))
+            {
+                this._values.Add(valueName, new StoreValue<T>(defaultValue));
+                PersistentStoreService.StoreChanged = true;
+            }
+
+            return this._values[valueName].UpdateDefault(defaultValue) as StoreValue<T>;
+        }
+
+        public void RemoveValueByName(string valueName)
+        {
+            if (this._values.ContainsKey(valueName))
+            {
+                this._values.Remove(valueName);
+                PersistentStoreService.StoreChanged = true;
+            }
+        }
+
+        public class PersistentStoreConverter : JsonConverter<Store>
+        {
+            public override void WriteJson(JsonWriter writer, Store value, JsonSerializer serializer)
+            {
+                var entryObject = new JObject();
+
+                if (value._substores.Any())
+                {
                     var storesObject = new JObject();
 
-                    foreach (var store in value._substores) {
+                    foreach (var store in value._substores)
+                    {
                         storesObject.Add(store.Key, JToken.FromObject(store.Value, serializer));
                     }
 
@@ -25,10 +72,12 @@ namespace Blish_HUD.PersistentStore {
                 }
 
                 var nonDefaultValues = value._values.Where(pair => !pair.Value.IsDefaultValue);
-                if (nonDefaultValues.Any()) {
+                if (nonDefaultValues.Any())
+                {
                     var valuesObject = new JObject();
 
-                    foreach (var ndValue in nonDefaultValues) {
+                    foreach (var ndValue in nonDefaultValues)
+                    {
                         valuesObject.Add(ndValue.Key, JToken.FromObject(ndValue.Value, serializer));
                     }
 
@@ -38,8 +87,10 @@ namespace Blish_HUD.PersistentStore {
                 entryObject.WriteTo(writer);
             }
 
-            public override Store ReadJson(JsonReader reader, Type objectType, Store existingValue, bool hasExistingValue, JsonSerializer serializer) {
-                JObject jObj = JObject.Load(reader);
+            public override Store ReadJson(JsonReader reader, Type objectType, Store existingValue,
+                bool hasExistingValue, JsonSerializer serializer)
+            {
+                var jObj = JObject.Load(reader);
 
                 var loadedStore = new Store();
 
@@ -47,44 +98,6 @@ namespace Blish_HUD.PersistentStore {
 
                 return loadedStore;
             }
-
         }
-
-        [JsonProperty("Stores")]
-        private Dictionary<string, Store> _substores = new Dictionary<string, Store>(StringComparer.OrdinalIgnoreCase);
-
-        [JsonProperty("Values")]
-        private Dictionary<string, StoreValue> _values = new Dictionary<string, StoreValue>(StringComparer.OrdinalIgnoreCase);
-
-        private Dictionary<string, StoreValue> _recordedValues {
-            get => _values.Where(pair => !pair.Value.IsDefaultValue).ToDictionary(dict => dict.Key, dict => dict.Value);
-            set => _values = value;
-        }
-
-        public Store GetSubstore(string substoreName) {
-            if (!_substores.ContainsKey(substoreName)) {
-                _substores.Add(substoreName, new Store());
-                PersistentStoreService.StoreChanged = true;
-            }
-
-            return _substores[substoreName];
-        }
-
-        public StoreValue<T> GetOrSetValue<T>(string valueName, T defaultValue = default) {
-            if (!_values.ContainsKey(valueName)) {
-                _values.Add(valueName, new StoreValue<T>(defaultValue));
-                PersistentStoreService.StoreChanged = true;
-            }
-
-            return _values[valueName].UpdateDefault(defaultValue) as StoreValue<T>;
-        }
-
-        public void RemoveValueByName(string valueName) {
-            if (_values.ContainsKey(valueName)) {
-                _values.Remove(valueName);
-                PersistentStoreService.StoreChanged = true;
-            }
-        }
-
     }
 }

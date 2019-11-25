@@ -18,7 +18,7 @@ namespace Blish_HUD.ArcDps.Common
         ///     Contains every player in the current group or squad.
         ///     Key: Character Name, Value: Account Name
         /// </summary>
-        public IReadOnlyDictionary<string, Player> PlayersInSquad => _playersInSquad;
+        public IReadOnlyDictionary<string, Player> PlayersInSquad => this._playersInSquad;
 
         /// <summary>
         ///     Gets invoked whenever someone joins the squad or group.
@@ -35,10 +35,10 @@ namespace Blish_HUD.ArcDps.Common
         /// </summary>
         public void Activate()
         {
-            if (_enabled)
+            if (this._enabled)
                 return;
 
-            _enabled = true;
+            this._enabled = true;
             GameService.ArcDps.RawCombatEvent += CombatHandler;
         }
 
@@ -52,7 +52,7 @@ namespace Blish_HUD.ArcDps.Common
             /* add */
             if (args.CombatEvent.Src.Profession != 0)
             {
-                if (!_playersInSquad.ContainsKey(args.CombatEvent.Src.Name))
+                if (!this._playersInSquad.ContainsKey(args.CombatEvent.Src.Name))
                 {
                     var accountName = args.CombatEvent.Dst.Name.StartsWith(":")
                         ? args.CombatEvent.Dst.Name.Substring(1)
@@ -61,7 +61,7 @@ namespace Blish_HUD.ArcDps.Common
                     var player = new Player(args.CombatEvent.Src.Name, accountName,
                         args.CombatEvent.Dst.Profession, args.CombatEvent.Dst.Elite, args.CombatEvent.Dst.Self != 0);
 
-                    _playersInSquad.Add(args.CombatEvent.Src.Name, player);
+                    this._playersInSquad.Add(args.CombatEvent.Src.Name, player);
 
                     PlayerAdded?.Invoke(player);
                 }
@@ -69,11 +69,11 @@ namespace Blish_HUD.ArcDps.Common
             /* remove */
             else
             {
-                if (_playersInSquad.ContainsKey(args.CombatEvent.Src.Name))
+                if (this._playersInSquad.ContainsKey(args.CombatEvent.Src.Name))
                 {
-                    var player = _playersInSquad[args.CombatEvent.Src.Name];
+                    var player = this._playersInSquad[args.CombatEvent.Src.Name];
 
-                    _playersInSquad.Remove(args.CombatEvent.Src.Name);
+                    this._playersInSquad.Remove(args.CombatEvent.Src.Name);
 
                     PlayerRemoved?.Invoke(player);
                 }
@@ -84,11 +84,11 @@ namespace Blish_HUD.ArcDps.Common
         {
             public Player(string characterName, string accountName, uint profession, uint elite, bool self)
             {
-                CharacterName = characterName;
-                AccountName = accountName;
-                Profession = profession;
-                Elite = elite;
-                Self = self;
+                this.CharacterName = characterName;
+                this.AccountName = accountName;
+                this.Profession = profession;
+                this.Elite = elite;
+                this.Self = self;
             }
 
             /// <summary>
